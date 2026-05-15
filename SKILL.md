@@ -5,9 +5,9 @@ description: >
   team's repo, returning to your own old code after months away, or evaluating
   an OSS project before contributing. Builds a verified mental model — what the
   system does, where data flows, what the implicit conventions are, and which
-  files are dangerous to touch first — producing a living CODEBASE.md and an
-  active "before you touch this" query layer.
-version: 1.0.0
+  files are dangerous to touch first — producing a living CODEBASE.md with
+  active modes for PR pre-flight, task mapping, and mid-PR file risk assessment.
+version: 2.0.0
 ---
 
 # Codebase Onboarding
@@ -30,20 +30,19 @@ you provide context that only humans have.
 | Joining a new team or repo for the first time | **join** |
 | Returning to your own code after 3+ months away | **return** |
 | Evaluating an OSS project before contributing | **audit** |
-| Inheriting a colleague's codebase | **join** |
-| Doing due diligence on an acquisition or dependency | **audit** |
-| About to modify a specific file or area mid-ramp | **touch** |
+| About to modify a specific file mid-ramp | **touch** |
+| About to push a PR — catch issues before review | **preflight** |
+| Assigned a ticket or feature — map it to the codebase | **task** |
 
-Default to **join** if unclear. Ask the user which mode if the context is ambiguous.
-
-**touch** is not an onboarding mode — it's ongoing use after the initial
-session. See [Touch Mode](#touch-mode-before-you-modify-anything) below.
+Default to **join** if unclear. `touch`, `preflight`, and `task` are ongoing
+modes — they require an existing CODEBASE.md from a prior session.
 
 ---
 
 ## Intake: Ask First
 
-Before running any phase, ask two questions in sequence. The answers reshape every phase that follows.
+Before running any orientation phase (join / return / audit), ask two questions.
+The answers reshape every phase that follows.
 
 ### Question 1: Technical profile
 
@@ -53,95 +52,88 @@ Ask:
 > non-technical — a PM, designer, analyst, or executive who needs to understand
 > the system without diving into the code itself?"
 
-Then explain the difference so the user can answer accurately:
+Then explain the difference:
 
 > **If you're technical:** I'll run shell commands, read source files, trace
-> execution paths, and map git history. The output will include code snippets,
-> file paths, and technical conventions — things you can act on directly.
+> execution paths, and map git history. Output includes code snippets, file
+> paths, and conventions — things you can act on directly. You'll also get a
+> local dev guide and PR pre-flight support.
 >
-> **If you're non-technical:** I'll still run all the same investigation, but
-> I'll translate everything into plain language. No code in the output — just
-> what the system does, what's risky, and what you need to know to make
-> decisions or have informed conversations with engineers. I'll also generate
-> a visual diagram of how the system fits together.
+> **If you're non-technical:** I'll run all the same investigation but translate
+> everything into plain language. No code in the output. You'll get a visual
+> architecture diagram, priority-ranked questions for your next engineering
+> meeting, and an executive brief you can share with stakeholders.
 
 ---
 
 ### Question 2: Goal
 
-Wait for the answer to Question 1, then ask about their goal — and tailor the examples to match their profile.
+Wait for the answer to Question 1, then tailor the examples:
 
 **If technical:**
-
-> "What are you trying to do with this codebase? For example:
 > - Make a contribution or fix a specific bug
 > - Take ownership — become the go-to maintainer
-> - Review it for quality, security, or architecture concerns
-> - Evaluate an open-source project before contributing
-> - Get up to speed quickly after being away for months"
+> - Review for quality, security, or architecture concerns
+> - Evaluate an OSS project before contributing
+> - Get up to speed after being away for months
 
 **If non-technical:**
-
-> "What do you need to understand about this codebase? For example:
-> - What the system actually does and how it fits together
-> - Whether the team is building the right thing
-> - How risky or stable it is before a launch, acquisition, or vendor decision
-> - What's holding the team back or slowing them down
-> - How to have a more informed conversation with the engineers building it"
+> - Understand what the system does and how it fits together
+> - Assess risk before a launch, acquisition, or vendor decision
+> - Identify what's slowing the team down
+> - Have a more informed conversation with engineers
+> - Prepare for a roadmap, sprint planning, or board conversation
 
 ---
 
-**Why both questions matter:**
+**Profile + Goal → what changes:**
 
 | Profile + Goal | What changes |
 |----------------|-------------|
-| Technical + contribute | Full workflow including Phase 6 (first safe contribution) |
+| Technical + contribute | Full workflow: Phases 0–7, local dev guide, Phase 8 |
 | Technical + own/maintain | Full depth; extra attention to Danger Zones and authorship |
-| Technical + review | Phases 0–4 with security/quality lens; skip Phase 6 |
+| Technical + review | Phases 0–6; security/quality lens; skip Phase 8 |
 | Technical + evaluate OSS | audit mode — contributor signal, merge rate, PR velocity |
-| Non-technical + understand | Phases 0–4; plain language output; Mermaid diagram in Phase 1 |
-| Non-technical + decide | Phases 0–4 + written recommendation section in CODEBASE.md |
-| Non-technical + evaluate | audit mode in plain language; go/no-go framing in output |
-
-Never assume. A non-technical executive evaluating an acquisition needs a completely different output than a developer taking over a repo.
+| Non-technical + understand | Phases 0–6; plain language; diagram; executive brief |
+| Non-technical + decide | Phases 0–6 + recommendation section in executive brief |
+| Non-technical + evaluate | audit mode; go/no-go framing in executive brief |
 
 ---
 
 ## Phase Order by Mode
 
-Modes change which phases run and in what order. Don't follow join order for return.
-
 | Phase | join | return | audit |
 |-------|------|--------|-------|
 | 0 — Bootstrap | ✓ first | ✓ first | ✓ first |
 | 1 — Critical Paths | ✓ | ✓ | ✓ |
-| 2 — Conventions | ✓ | ✓ after Phase 7 | ✓ |
-| 3 — Danger Zones | ✓ | ✓ after Phase 7 | ✓ |
+| 2 — Conventions | ✓ | ✓ after Phase 9 | ✓ |
+| 3 — Danger Zones | ✓ | ✓ after Phase 9 | ✓ |
 | 4 — Gotcha Detector | ✓ | ✓ | ✓ |
-| 5 — Team Questions | ✓ | ✓ | ✓ |
-| 6 — First Safe Contribution | ✓ | ✓ | skip |
-| 7 — Archaeology | skip | ✓ before Phase 2 | skip |
-| 8 — Contributor Signal | skip | skip | ✓ |
+| 5 — Local Dev Guide | technical only | technical only | skip |
+| 6 — Team Questions | technical: 1:1 format | technical: 1:1 format | technical: 1:1 format |
+|                    | non-technical: meeting format | non-technical: meeting format | non-technical: meeting format |
+| 7 — Executive Brief | non-technical only | non-technical only | non-technical only |
+| 8 — First Contribution | technical only | technical only | skip |
+| 9 — Archaeology | skip | ✓ before Phase 2 | skip |
+| 10 — Contributor Signal | skip | skip | ✓ |
 
-**In return mode:** run Phase 7 (Archaeology) immediately after Phase 1. You need
-to know why decisions were made before you can evaluate whether the current
-conventions are intentional or legacy drift.
+**In return mode:** run Phase 9 (Archaeology) immediately after Phase 1.
 
 ---
 
 ## Output: CODEBASE.md
-
-The skill produces and maintains a single living document. Not a one-time scan.
 
 ```
 CODEBASE.md
 ├── What This Is          # one-paragraph system description
 ├── Architecture Map      # Mermaid diagram + component description
 ├── Critical Paths        # entry points → processing → exit
+├── Local Dev Guide       # technical only: step-by-step to get it running
 ├── Conventions           # implicit rules the README doesn't mention
 ├── Danger Zones          # what not to touch first, and why
 ├── Gotchas               # what silently burns new contributors
-├── Team Questions        # prioritised: blocking / important / nice-to-know
+├── Team Questions        # technical: 1:1 format | non-technical: meeting format
+├── Executive Brief       # non-technical only: one-page health summary
 ├── Open Questions        # still unclear — actively maintained
 └── Contribution Log      # join/return: changes + learnings
                           # audit: merge rate, PR velocity, go/no-go
@@ -149,34 +141,22 @@ CODEBASE.md
 
 ### Confidence calibration
 
-Every section carries a confidence tag. Don't write sections without one.
+Every section carries a confidence tag:
 
 | Tag | Meaning |
 |-----|---------|
 | ✅ Verified | Based on CI config, git history, or explicit documentation |
 | ⚠️ Inferred | Based on patterns — likely but not confirmed |
-| ❓ Gap | Couldn't assess from code alone — needs human confirmation |
+| ❓ Gap | Couldn't assess from code — needs human confirmation |
 
-Example:
-
-```markdown
-## Conventions ⚠️ Inferred
-
-Commit style appears to be conventional commits based on the last 30 messages,
-but the team has no enforced linter. A few commits in the last month broke the
-pattern — unclear if intentional.
-```
-
-Gap sections feed directly into Team Questions. If you wrote ❓ on something,
-there should be a corresponding question in Phase 5.
+Gap sections automatically feed into Team Questions. If you wrote ❓, there
+must be a corresponding question.
 
 Update CODEBASE.md at the end of each phase. Do not defer.
 
 ---
 
 ## Phase 0: Bootstrap
-
-Read these in order. Stop when you can answer the question at the bottom.
 
 ```
 1. README.md / README.rst    → what does it claim to do?
@@ -188,29 +168,22 @@ Read these in order. Stop when you can answer the question at the bottom.
 6. .github/workflows/         → what CI runs — the ground truth
 ```
 
-**CI is the most honest documentation in any codebase.** It runs on every commit and
-doesn't lie. If it conflicts with the README, CI wins.
+CI is the most honest documentation. If it conflicts with the README, CI wins.
 
 ```bash
-# Scan in 30 seconds
 ls -la && head -50 README.md
 ls .github/workflows/ 2>/dev/null
 grep -E "run:|script:" .github/workflows/*.yml 2>/dev/null | head -20
-
-# Remote pulse (join/audit mode)
 gh issue list --state open --limit 5 2>/dev/null
 gh pr list --state open --limit 5 2>/dev/null
 ```
 
-**Gate:** Write the "What This Is" section of CODEBASE.md with a confidence tag.
-One paragraph. No jargon. If you can't write it confidently, you haven't read
-enough — don't proceed to Phase 1.
+**Gate:** Write "What This Is" in CODEBASE.md with a confidence tag. One
+paragraph, no jargon. Can't write it? Read more — don't proceed.
 
 ---
 
 ## Phase 1: Map the Critical Paths
-
-Find where data enters and leaves. Every system has 2–5 entry points. Find them.
 
 ```bash
 # Entry points
@@ -227,25 +200,16 @@ find . \( -name "*.sql" -o -name "schema.*" -o -type d -name "migrations" \) \
 grep -rn "sqlite\|postgres\|mysql\|redis\|mongo" \
   --include="*.toml" --include="*.json" --include="*.env*" -l | head -10
 
-# Monorepo: find the packages first
+# Monorepo
 ls packages/ apps/ services/ 2>/dev/null | head -20
 ```
 
-For each entry point: trace the data one level deep. What format comes in? What
-transformation happens? What goes out?
+Trace each entry point one level deep: format in → transformation → format out.
+Write **Critical Paths** and **Architecture Map** in CODEBASE.md.
 
-Write **Critical Paths** in CODEBASE.md with a confidence tag.
+### Architecture Map — generated for all users
 
-Don't trace everything. Two or three critical paths beat a full audit you'll
-abandon.
-
-### Architecture Map (all users)
-
-After tracing the critical paths, generate a Mermaid diagram and write it into
-the **Architecture Map** section of CODEBASE.md.
-
-**For technical users** — show file/package names and data flow direction:
-
+**Technical users** (file paths, data flow):
 ```mermaid
 graph LR
     Client -->|HTTP| API[api/routes.go]
@@ -255,8 +219,7 @@ graph LR
     Handler --> Cache[(redis)]
 ```
 
-**For non-technical users** — use plain names, no file paths, no code:
-
+**Non-technical users** (plain labels, same structure):
 ```mermaid
 graph LR
     User -->|sends request| API[Web API]
@@ -266,77 +229,54 @@ graph LR
     Logic --> Cache[(Fast Cache)]
 ```
 
-Keep it to 10 nodes maximum. The diagram is the most shareable artifact from
-the session — a non-technical stakeholder can put it in Notion or present it in
-a meeting. Clarity beats completeness.
+Cap at 10 nodes. The diagram is the most shareable artifact — a stakeholder
+can paste it into Notion or a slide deck directly.
 
 ---
 
 ## Phase 2: Extract Conventions
 
-The README documents what the team intended. Git history documents what they
-actually do. These often conflict. Git wins.
-
 ```bash
-# Commit message style — what format do they use?
 git log --format="%s" -30
-
-# Pattern frequency
 git log --format="%s" | grep -oE "^[a-z]+(\([^)]+\))?" | sort | uniq -c | sort -rn | head -10
-
-# PR/commit discipline — do they test?
 git log --format="%s" | grep -i "test\|spec\|fix" | wc -l
 git log --format="%s" | grep -i "wip\|todo\|tmp" | wc -l
-
-# High-churn files — what does the team touch most?
 git log --format=format: --name-only | grep -v "^$" | sort | uniq -c | sort -rn | head -15
-
-# Authorship — who owns what area?
 git log --format="%ae" --follow -- src/ | sort | uniq -c | sort -rn | head -10
 ```
 
-Look for what a new contributor would get wrong without being told:
+Extract what a contributor would get wrong without being told:
 - Commit message format (conventional commits? ticket prefix? freeform?)
-- PR size norm (focused single-purpose, or large batch PRs?)
-- Test discipline (every commit touches tests, or tests are separate?)
+- PR size norm (focused or batched?)
+- Test discipline (every commit touches tests, or separate?)
 - Branch naming, squash vs merge, rebase policy
 
-Write **Conventions** in CODEBASE.md with a confidence tag. Prioritise implicit
-rules over documented ones — the README already covers the rest.
+Write **Conventions** with a confidence tag. Prioritise implicit rules — the
+README already covers the explicit ones.
 
 ---
 
 ## Phase 3: Map the Danger Zones
 
-Danger zones are not necessarily bad code. They are high-blast-radius code. Do
-not touch them first.
-
 ```bash
-# High churn (conflict-prone, frequently broken)
 git log --format=format: --name-only | grep -v "^$" | sort | uniq -c | sort -rn | head -20
-
-# Known debt clusters (often load-bearing — don't "fix" these first)
 grep -rn "TODO\|FIXME\|HACK\|XXX" \
   --include="*.go" --include="*.ts" --include="*.py" --include="*.js" \
   | awk -F: '{print $1}' | sort | uniq -c | sort -rn | head -10
-
-# Large files (hard to understand, high blast radius)
 find . -type f \( -name "*.go" -o -name "*.ts" -o -name "*.py" -o -name "*.js" \) \
   ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/vendor/*" \
   -exec wc -l {} + 2>/dev/null | sort -rn | head -15
-
-# Frequently reverted (unstable)
 git log --format="%s" | grep -i "revert\|rollback" | head -10
 ```
 
-Write **Danger Zones** in CODEBASE.md as a table with a confidence tag:
+Write **Danger Zones** as a table:
 
 ```
-| File / Area          | Why dangerous                              | When to touch |
-|----------------------|--------------------------------------------|---------------|
-| src/core/engine.go   | 2,847 lines, 47 TODOs, in 89% of PRs      | After 4+ weeks|
-| migrations/          | Schema changes require team coordination   | Never solo    |
-| auth/                | Security-sensitive, subtle failure modes   | With review   |
+| File / Area         | Why dangerous                         | When to touch  |
+|---------------------|---------------------------------------|----------------|
+| src/core/engine.go  | 2,847 lines, 47 TODOs, in 89% of PRs | After 4+ weeks |
+| migrations/         | Schema changes need team coordination | Never solo     |
+| auth/               | No tests, last touched 18 months ago  | With review    |
 ```
 
 ---
@@ -345,156 +285,259 @@ Write **Danger Zones** in CODEBASE.md as a table with a confidence tag:
 
 **(all modes)**
 
-Every codebase has something that silently burns every new contributor. It's not
-in the README, it's not in the git log, and no one thinks to mention it. This
-phase hunts for it specifically.
+Hunts for what silently burns every new contributor — not in the README, not
+in the git log, not mentioned by anyone.
 
 ```bash
-# Env vars used in code but missing from .env.example / .env.sample
-# (new contributor runs the app, gets a cryptic error)
+# Env vars in code but missing from .env.example
 grep -rn "process\.env\." --include="*.ts" --include="*.js" -h \
   | grep -oE 'process\.env\.[A-Z_]+' | sort -u > /tmp/env_used.txt
 grep -rn "os\.environ\|os\.Getenv" --include="*.py" --include="*.go" -h \
   | grep -oE '[A-Z_]{3,}' | sort -u >> /tmp/env_used.txt
 grep -v "^#" .env.example .env.sample 2>/dev/null | cut -d= -f1 | sort > /tmp/env_documented.txt
-comm -23 <(sort /tmp/env_used.txt) /tmp/env_documented.txt | head -10
+comm -23 <(sort -u /tmp/env_used.txt) /tmp/env_documented.txt | head -10
 
-# Pre-commit hooks that run locally but NOT in CI
-# (code passes locally, fails in CI — or passes CI, fails pre-commit)
+# Pre-commit vs CI divergence
 cat .pre-commit-config.yaml 2>/dev/null | grep -A1 "  - id:"
 ls .git/hooks/ 2>/dev/null | grep -v "\.sample"
-diff <(grep -E "run:" .github/workflows/*.yml 2>/dev/null | grep -oE "'[^']+'" | sort) \
-     <(cat .pre-commit-config.yaml 2>/dev/null | grep "entry:" | sort) 2>/dev/null | head -10
 
-# Tests with global state or ordering dependencies
-# (work individually, fail when run together)
+# Tests with global state (break when parallelised)
 grep -rn "global\|singleton\|module.*cache\|shared.*state" \
-  --include="*.test.*" --include="*_test.*" --include="*spec*" -l | head -10
-grep -rn "beforeAll\|setUpClass\|TestMain" \
   --include="*.test.*" --include="*_test.*" -l | head -10
 
-# Setup scripts not referenced in README
-find . \( -name "setup.sh" -o -name "bootstrap.sh" -o -name "install.sh" \
+# Unreferenced setup scripts
+find . \( -name "setup.sh" -o -name "bootstrap.sh" -o -name "seed.sh" \
   -o -name "init.sh" \) ! -path "*/.git/*" ! -path "*/node_modules/*" 2>/dev/null \
-  | while read f; do grep -l "$f" README.md CONTRIBUTING.md 2>/dev/null \
-  || echo "UNREFERENCED: $f"; done
+  | while read f; do
+      grep -ql "$(basename $f)" README.md CONTRIBUTING.md 2>/dev/null \
+      || echo "UNREFERENCED: $f"
+    done
 
-# Database migrations that must run in order (broken local dev)
-find . -type d -name "migrations" ! -path "*/node_modules/*" 2>/dev/null | head -5
-ls migrations/ 2>/dev/null | wc -l
-
-# Race conditions or port conflicts in tests
+# Port conflicts in tests
 grep -rn "localhost\|127\.0\.0\.1\|:8080\|:3000" \
   --include="*.test.*" --include="*_test.*" -l | head -10
 ```
 
-Write **Gotchas** in CODEBASE.md — a plain list of what will silently burn a
-new contributor in week 1. Be specific:
+Write **Gotchas** — specific, not generic:
 
-```
+```markdown
 ## Gotchas ✅ Verified
 
-- `STRIPE_WEBHOOK_SECRET` is required but missing from .env.example —
-  payments will silently fail without it
-- Pre-commit runs `eslint --fix` locally but CI runs `eslint` (no fix) —
-  code that passes locally can fail CI if you don't commit after the hook runs
-- Tests in `auth/` share a singleton DB connection — running them in parallel
-  (`pytest -n 4`) causes random failures; always run `pytest -p no:xdist auth/`
-- `scripts/seed.sh` must be run before tests — not mentioned in README or
-  CONTRIBUTING; only discoverable from a cryptic foreign key error
+- `STRIPE_WEBHOOK_SECRET` required but absent from `.env.example` —
+  payments fail silently without it
+- Pre-commit runs `eslint --fix`; CI runs `eslint` — passes locally,
+  fails CI if you don't re-stage after the hook fires
+- `auth/` tests share a singleton connection — `pytest -n 4` causes
+  random failures; always run `pytest -p no:xdist auth/`
+- `scripts/seed.sh` must run before tests — not in README; fails with
+  a cryptic foreign key error if skipped
 ```
 
-If nothing surfaces: write `## Gotchas ✅ Verified — None found` and move on.
-That's also signal.
+If nothing found: write `## Gotchas ✅ Verified — None found`. That's signal too.
 
 ---
 
-## Phase 5: Team Questions
+## Phase 5: Local Dev Guide
 
-**(all modes)**
+**(technical users only — join and return modes)**
 
-Every phase surfaces things code can't answer. Those gaps become specific,
-priority-ordered questions for the human's first team conversation.
+Synthesise everything found across Phases 0–4 into a step-by-step guide for
+getting the codebase running locally. This is the document every new contributor
+wishes existed on day one.
 
-After completing Phases 1–4 (or 7 in return mode), review every ❓ Gap tag and
-every unexplained anomaly, then generate the **Team Questions** section.
+```bash
+# Runtime requirements from manifests
+cat package.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('engines',''))" 2>/dev/null
+cat .tool-versions 2>/dev/null    # asdf versions
+cat .nvmrc 2>/dev/null            # Node version
+cat .python-version 2>/dev/null   # Python version
+cat go.mod 2>/dev/null | head -5  # Go version
 
-### Priority tiers
+# Docker / service dependencies
+cat docker-compose.yml 2>/dev/null | grep -E "image:|ports:" | head -20
 
-**🔴 Blocking** — can't write safe code without this answer. Ask in the first hour.
-**🟡 Important** — affects how you work this week. Ask in your first 1:1.
-**🟢 Nice-to-know** — useful context, not urgent. Ask when the opportunity arises.
+# Migration count and order
+ls -1 migrations/ db/migrations/ 2>/dev/null | wc -l
+ls -1 migrations/ db/migrations/ 2>/dev/null | head -5
 
-The tiers are determined by blast radius: a blocking question is one where
-getting it wrong leads to a broken commit, a wasted PR, or a production issue.
+# Available run scripts
+cat package.json 2>/dev/null | python3 -c \
+  "import json,sys; [print(k,':',v) for k,v in json.load(sys.stdin).get('scripts',{}).items()]" 2>/dev/null
+grep -E "^[a-zA-Z].*:" Makefile 2>/dev/null | head -20
+```
 
-### Format each question specifically
+Write **Local Dev Guide** as an ordered list a new contributor can follow
+verbatim. Every step must be a real command or a real instruction — no vague
+"configure your environment" steps:
 
-Not "why is auth written this way" but:
+```markdown
+## Local Dev Guide ✅ Verified
 
-> "The auth module has no tests, was last touched 18 months ago, and contains
-> 3 FIXMEs. Is that a known gap with a plan, or is it considered stable?"
+### Prerequisites
+- Node.js 18+ (required by package.json engines)
+- PostgreSQL 14+ (from docker-compose.yml)
+- Redis 7+ (from docker-compose.yml)
 
-Vague questions get vague answers.
+### Setup
+1. `cp .env.example .env`
+2. Set these missing variables (not in .env.example — see Gotchas):
+   - `STRIPE_WEBHOOK_SECRET` — ask alice@example.com for the dev key
+   - `JWT_SECRET` — any 32-char random string works locally
+3. `npm install`
+4. `docker-compose up -d postgres redis`
+5. `npm run db:migrate`         ← runs 47 migrations
+6. `node scripts/seed.sh`       ← not in README; required for tests
+7. `npm run dev`                → starts on http://localhost:3000
 
-**Example output:**
+### Verify
+`curl http://localhost:3000/health` → should return `{"status":"ok"}`
 
+### Run tests
+`npm test`                      ← what CI runs (not `make test` in README)
+`pytest -p no:xdist auth/`      ← auth/ specifically (parallel breaks it)
+
+### Common failures
+- Migrations fail → PostgreSQL not running or DATABASE_URL not set
+- Tests fail randomly → run auth/ without parallelism (see above)
+- Stripe errors → STRIPE_WEBHOOK_SECRET missing from .env
+```
+
+---
+
+## Phase 6: Team Questions
+
+**(all modes — content varies by profile)**
+
+Every phase surfaces things code can't answer. After Phases 1–5 (or Phase 9 in
+return mode), review every ❓ Gap tag and every unexplained anomaly. Generate
+the **Team Questions** section — format depends on profile.
+
+### For technical users — 1:1 format
+
+Three priority tiers. Criteria: blast radius if you get it wrong.
+
+```
+🔴 Blocking  — can't write safe code without this. Ask in the first hour.
+🟡 Important — affects how you work this week. Ask in your first 1:1.
+🟢 Nice-to-know — useful context, not urgent.
+```
+
+Questions must be specific — not "why is X like this" but "X has no tests and
+was last touched 18 months ago — is that intentional or a known gap?"
+
+**Example:**
 ```markdown
 ## Team Questions ✅ Verified
 
 ### 🔴 Blocking
-
-1. `STRIPE_WEBHOOK_SECRET` is used in code but not in `.env.example`.
-   What value should I use locally for testing — is there a shared dev key,
-   or do I need to set up my own Stripe account?
-
-2. CI runs `pytest -x` but the README says `make test`. Which one should I
-   use locally — and why are they different?
+1. `STRIPE_WEBHOOK_SECRET` is in code but not in `.env.example`. Shared
+   dev key, or do I set up my own Stripe account?
+2. CI runs `pytest -x`, README says `make test`. Which for local dev?
 
 ### 🟡 Important
-
-3. `payments/sync.go` has been reverted 3 times in 6 months. Is there an
-   active fix in progress, or is this known-broken and being avoided?
-
-4. The auth module has no tests and was last touched 18 months ago. Is that
-   intentional (considered stable), or a known gap?
-
-5. Git log shows two people own 80% of the auth codebase. Who reviews auth
-   PRs when they're both unavailable?
+3. `payments/sync.go` reverted 3× in 6 months — active fix, or avoided?
+4. Auth has no tests, last touched 18 months ago — known gap or stable?
 
 ### 🟢 Nice-to-know
-
-6. `core/engine.go` is 2,400 lines. Is there a plan to break it up, or is
-   it intentionally monolithic?
-
-7. There's no staging environment in CI — is production the first place new
-   code runs, or is there a manual gate somewhere?
+5. `core/engine.go` is 2,400 lines — plan to break it up, or intentional?
 ```
 
-Aim for 2–4 blocking, 3–5 important, and 2–4 nice-to-know. More than 12 total
-means you're not filtering. Fewer than 5 total means you weren't paying attention.
+Aim for 2–4 blocking, 3–5 important, 2–4 nice-to-know. Under 5 total means
+you weren't paying attention. Over 12 means you're not filtering.
+
+### For non-technical users — meeting format
+
+Generate questions framed for group settings, not a 1:1 with an engineer.
+Group by the meeting type most relevant to the user's stated goal:
+
+```markdown
+## Team Questions ✅ Verified
+
+### For your next sprint planning
+- The payment module has broken and been reverted 3 times this year —
+  is there work scheduled to fix it, and what's at risk if we ship
+  features that touch it this sprint?
+- Are there any areas the team is actively avoiding due to risk?
+
+### For your next roadmap review
+- Which parts of the system carry the most technical risk for our
+  planned features — where are we most likely to hit unexpected slowdowns?
+- Is there tech debt that needs investment before we can safely build X?
+
+### For a board or investor conversation
+- How would you describe the overall health of the engineering foundation?
+- What's the one area of the codebase that worries the team most, and
+  what's the plan for it?
+```
 
 ---
 
-## Phase 6: First Safe Contribution
+## Phase 7: Executive Brief
 
-**(join and return modes only — skip in audit)**
+**(non-technical users only — all modes)**
 
-The only real test of a mental model is a change that could break something.
-Claude finds a specific candidate and drafts the change; the human reviews,
-runs it locally, and submits.
+After Phase 6, synthesise all findings into a single-page document in business
+language. This is what gets shared with directors, investors, or stakeholders
+making decisions about this codebase.
 
-### Finding the candidate
+No code. No file paths. No technical jargon. Every finding translated to
+business impact.
 
-Don't describe a category — find the actual file, line, and fix.
+**Format:**
+
+```markdown
+## Executive Brief ✅ Verified
+
+### What this system does
+[One sentence. What it does, who uses it, what it enables.]
+
+### Codebase health summary
+
+| Area | Status | Business impact |
+|------|--------|----------------|
+| Core engine | 🔴 High risk | Changes here are slow and bug-prone |
+| Payments | 🟡 Unstable | Has broken 3× in 6 months; customer-facing risk |
+| Authentication | 🟡 Untested | No safety net; bugs affect all users |
+| API layer | 🟢 Healthy | Well-maintained, stable |
+
+### Top risks — in plain language
+1. **Payment instability:** The payment processing module has broken and
+   been reverted three times in six months. Any new work touching payments
+   carries a meaningful risk of customer-facing outage.
+2. **Untested authentication:** Login and session management have no
+   automated tests. Bugs here affect every user and are hard to catch
+   before they reach production.
+3. **Core engine debt:** The central processing layer has significant
+   known debt. Adding features or fixing bugs there takes longer than
+   it should and is prone to unexpected breakage.
+
+### Recommended questions for your next engineering conversation
+1. What's the plan for the payment instability — is there a fix in
+   progress, and what's the timeline?
+2. Is there a roadmap for adding test coverage to authentication?
+3. Which debt area is costing the most in engineer time right now,
+   and where should we invest first?
+
+### Overall assessment
+[One sentence: go/no-go, high/medium/low risk, or what needs to happen
+before this codebase is ready for X — whatever matches the stated goal.]
+```
+
+---
+
+## Phase 8: First Safe Contribution
+
+**(technical users — join and return modes only)**
+
+Find a specific candidate — file, line, fix — not just a category.
 
 ```bash
-# Failing or flaky tests
+# Failing tests
 npm test 2>&1 | grep -E "FAIL|✗|Error" | head -20
 pytest --tb=no -q 2>&1 | grep -E "FAILED|ERROR" | head -20
 go test ./... 2>&1 | grep -E "FAIL|panic" | head -20
 
-# Lint / type errors CI flags
+# Lint / type errors
 npm run lint 2>&1 | head -30
 npx tsc --noEmit 2>&1 | head -30
 golangci-lint run 2>&1 | head -30
@@ -504,57 +547,45 @@ ruff check . 2>&1 | head -30
 gh issue list --label "good first issue" --limit 10 2>/dev/null
 gh issue list --label "help wanted" --limit 10 2>/dev/null
 
-# Broken commands or examples in docs
-grep -rn "```" docs/ README.md --include="*.md" -A5 \
+# Broken doc examples
+grep -rn "^\`\`\`" docs/ README.md --include="*.md" -A5 \
   | grep -E "^\$ |^> " | head -20
 ```
 
-Pick **one** candidate. Output: file + line number + what's wrong + what the fix
-is + why it's safe. If nothing surfaces, say so explicitly — that's signal too.
-
-**What to avoid:**
+Output: one candidate with file + line + what's wrong + fix + why it's safe.
+Nothing found → say so explicitly.
 
 ```
-✗ A refactor of anything (too much blast radius, too little context)
-✗ A new feature (the right approach isn't clear yet)
+✗ Refactor (too much blast radius)
+✗ New feature (approach not clear yet)
 ✗ Anything in a Danger Zone
-✗ "Cleaning up" code that isn't fully understood yet
+✗ Cleanup you don't fully understand yet
 ```
 
 ```bash
-# Before submitting — run exactly what CI runs (from Phase 0)
-git diff --stat   # confirm no Danger Zone files in the diff
+git diff --stat   # verify no Danger Zone files in the diff
 ```
 
-Write what was learned in the **Contribution Log**. Even "nothing broke and the
-review was fast" is signal.
+Claude finds and drafts. Human runs CI, reviews, submits.
+
+Write what was learned in **Contribution Log**.
 
 ---
 
-## Phase 7: Archaeology
+## Phase 9: Archaeology
 
-**(return mode only — run this before Phases 2 and 3)**
-
-When returning to your own old code, the question shifts from "what does this
-do" to "why did I do it this way." Answer that before evaluating conventions.
+**(return mode only — run before Phases 2 and 3)**
 
 ```bash
-# What was I thinking?
 git log --all --format="%ad %s" --date=short | head -40
-
-# What decisions were captured?
 find . -name "ADR*" -o -name "DECISION*" -o -path "*/docs/*.md" 2>/dev/null | head -10
-
-# What was I in the middle of?
 git stash list
 git log --all --oneline --decorate | head -20
 find . -name "*.todo" -o -name "NOTES*" -o -name "SCRATCH*" 2>/dev/null
-
-# What broke last?
 git log --format="%s" | grep -i "fix\|revert\|hotfix\|broke" | head -10
 ```
 
-Add an **Archaeology Notes** section to CODEBASE.md:
+Add **Archaeology Notes** to CODEBASE.md:
 - What you rediscovered that still makes sense
 - What you'd do differently now
 - What you found that surprised you
@@ -563,22 +594,15 @@ Then continue to Phase 2. Archaeology reframes what you'll see there.
 
 ---
 
-## Phase 8: Contributor Signal
+## Phase 10: Contributor Signal
 
 **(audit mode only)**
 
-Before investing time in an OSS contribution, verify it's worth it.
-
 ```bash
-# Is the project active?
 git log --format="%ad" --date=short | head -5
 gh issue list --state open --limit 5
 gh pr list --state open --limit 5
-
-# Are PRs actually reviewed and merged?
 gh pr list --state closed --limit 20 | grep -v "MERGED"
-
-# How long do PRs sit?
 gh pr list --state closed --json mergedAt,createdAt --limit 20 \
   | python3 -c "
 import json,sys
@@ -593,110 +617,196 @@ for p in prs:
 ```
 
 Add to CODEBASE.md: merge rate, average PR-to-merge time, maintainer
-responsiveness, and a go/no-go recommendation with reasoning.
+responsiveness, and go/no-go recommendation with reasoning.
 
 ---
 
 ## Touch Mode: Before You Modify Anything
 
-**Invoke at any time after initial onboarding:**
+**Requires an existing CODEBASE.md. Invoke at any time:**
 
 > "I'm about to modify `[file or area]` — run touch mode."
 
-Touch mode is the skill's ongoing value layer. Initial onboarding gives you a
-mental model. Touch mode applies that model to the specific thing you're about
-to change — before you change it.
-
-### What it does
-
 ```bash
-# Recent activity on this file
 git log --follow -20 --oneline -- [file]
-
-# Who has touched it (expertise map)
 git log --follow --format="%ae" -- [file] | sort | uniq -c | sort -rn | head -5
-
-# TODOs and known issues inside the file
 grep -n "TODO\|FIXME\|HACK\|XXX" [file] | head -10
-
-# What tests cover this file
-grep -rn "[filename_without_ext]" --include="*.test.*" --include="*_test.*" \
-  --include="*spec*" -l | head -10
-
-# Anything recently reverted here
+grep -rn "[filename_without_ext]" --include="*.test.*" --include="*_test.*" -l | head -10
 git log --follow --format="%s" -- [file] | grep -i "revert\|rollback" | head -5
-
-# Is this file in the Danger Zones?
 grep -F "[file]" CODEBASE.md | head -5
 ```
 
-### Output format
+**Output format:**
 
-```markdown
-## Before You Touch `auth/middleware.go`
+```
+Before You Touch: auth/middleware.go
 
-**Risk level:** HIGH — this file is in your Danger Zones list
+Risk level: HIGH — listed in Danger Zones
 
-**Recent activity (last 10 commits):**
-- 3 days ago: fix: token expiry edge case (alice@example.com)
-- 2 weeks ago: revert: "refactor auth flow" — broke staging
-- 1 month ago: fix: race condition in session validation
+Recent commits:
+  3 days ago   fix: token expiry edge case       alice@example.com
+  2 weeks ago  REVERT: "refactor auth flow" — broke staging
+  1 month ago  fix: race condition in session validation
 
-**Who to ping for review:** alice@example.com (14 of last 20 commits)
+Who to ping: alice@example.com (14 of last 20 commits here)
 
-**Known issues inside the file:**
-- Line 47: TODO — refresh token rotation not implemented
-- Line 203: FIXME — this will break if user has multiple active sessions
+Known issues:
+  Line 47   TODO  refresh token rotation not implemented
+  Line 203  FIXME breaks with multiple active sessions
 
-**Tests that cover this:**
-- tests/auth/middleware_test.go
-- tests/integration/session_test.go
+Tests covering this:
+  tests/auth/middleware_test.go
+  tests/integration/session_test.go
 
-**Watch out for:**
-- This file was reverted once after a "safe" refactor — the session
-  singleton on line 89 has non-obvious global state
-- No staging environment — changes go straight to production
+Watch out for:
+  Session singleton on line 89 has non-obvious global state —
+  this is what caused the revert two weeks ago
 ```
 
-Touch mode turns CODEBASE.md from a document you read once into a tool you
-reach for mid-PR. The higher the risk level, the more important it is to run
-it before opening a diff.
+---
+
+## Preflight Mode: Before You Push
+
+**Requires an existing CODEBASE.md. Invoke before opening a PR:**
+
+> "Run preflight on my current changes."
+
+```bash
+# What's in the diff?
+git diff HEAD --name-only
+git diff HEAD --stat
+
+# Commit message
+git log --format="%s" -1
+
+# Tests in the diff?
+git diff HEAD --name-only | grep -iE "test|spec" | head -10
+git diff HEAD --name-only | grep -viE "test|spec" | head -10
+
+# Who last owned the touched files?
+for f in $(git diff HEAD --name-only); do
+  echo "--- $f ---"
+  git log --follow --format="%ae" -- "$f" | sort | uniq -c | sort -rn | head -3
+done
+```
+
+Cross-reference findings against CODEBASE.md and output a pre-flight report:
+
+```
+PR Pre-flight: feat/add-rate-limiting
+
+✅ Commit message follows conventional commits format
+✅ No Danger Zone files in the diff
+⚠️  auth/middleware.go touched — alice@example.com should review (14 of last 20 commits)
+❌ No test changes for modified source files (convention: every commit touches tests)
+⚠️  payments/ touched — review Gotcha: pre-commit runs eslint --fix, CI does not
+
+Suggested reviewers:
+  alice@example.com  → auth/middleware.go
+  bob@example.com    → api/routes.go
+
+Conventions check:
+  ✅ Branch name matches pattern (feat/*)
+  ✅ Commit is focused (4 files — within team norm)
+  ❌ Missing test coverage for changed files
+
+Overall: ⚠️ ADDRESS BEFORE PUSHING
+  → Add tests for changed files
+  → Re-stage after pre-commit hook fires (eslint --fix)
+```
+
+Preflight catches what reviewers would catch — before review. One ❌ means fix
+it. One ⚠️ means be aware. All ✅ means push with confidence.
+
+---
+
+## Task Mode: Map a Ticket to the Codebase
+
+**Requires an existing CODEBASE.md. Invoke when starting any new piece of work:**
+
+> "I've been assigned to add rate limiting to the API."
+> "I need to fix the payment retry logic — what do I need to know?"
+> "I'm picking up ticket #47 — where do I start?"
+
+Task mode maps intent to the codebase using CODEBASE.md as the lens:
+
+1. **Identify relevant files** — from Architecture Map and Critical Paths, where does this work live?
+2. **Flag proximity to Danger Zones** — is the work adjacent to anything risky?
+3. **Surface applicable conventions** — what does the team's pattern say about how to do this?
+4. **Find similar past work** — has this been done before? Who did it?
+5. **Identify who to loop in** — from authorship and expertise signals
+
+```bash
+# Has this kind of work been done before?
+git log --format="%s %h" | grep -i "[keyword from task]" | head -10
+
+# Who touched the relevant area last?
+git log --follow --format="%ae" -- [relevant path] | sort | uniq -c | sort -rn | head -5
+
+# Any open issues related?
+gh issue list --search "[keyword]" --limit 5 2>/dev/null
+```
+
+**Output format:**
+
+```
+Task: Add rate limiting to the API
+
+Relevant files:
+  api/routes.go         — entry point; rate limiting hooks here
+  api/middleware.go     — existing middleware pattern to follow ← start here
+
+Danger Zone proximity:
+  auth/middleware.go    ⚠️  adjacent — avoid touching unless necessary
+
+Similar past work:
+  "feat(api): add request logging middleware" — 3 months ago, bob@example.com
+  Follow the same pattern: middleware.go, not routes.go
+
+Conventions that apply:
+  Every new middleware needs an integration test in tests/api/
+  Middleware naming: [action]Middleware (e.g. rateLimitMiddleware)
+
+Who to loop in:
+  bob@example.com — built existing middleware, owns api/ (last 20 commits)
+
+Risk level: LOW
+  api/ is not a Danger Zone. Pattern is established. Bob can review.
+
+Suggested first step:
+  Read api/middleware.go (the logging middleware) — it's the template
+  for what you're about to build.
+```
 
 ---
 
 ## Keeping CODEBASE.md Current
 
-A CODEBASE.md written today is accurate today. Without maintenance it becomes
-misleading within weeks. Run this check periodically — or whenever the codebase
-feels like it's drifted from what you documented.
+Run when the codebase feels like it's drifted:
 
 ```bash
 # What changed since CODEBASE.md was last updated?
-git log --since="$(git log --follow -- CODEBASE.md --format='%ad' \
-  --date=short | head -1)" --format=format: --name-only \
-  | grep -v "^$" | sort | uniq -c | sort -rn | head -20
+git log --since="$(git log --follow -- CODEBASE.md \
+  --format='%ad' --date=short | head -1)" \
+  --format=format: --name-only | grep -v "^$" \
+  | sort | uniq -c | sort -rn | head -20
 
-# Did the Danger Zones get touched?
+# Danger Zones touched?
 git log --since="2 weeks ago" -- src/core/ auth/ migrations/ --oneline | head -10
 
-# Did CI change?
+# CI changed?
 git log --since="2 weeks ago" -- .github/workflows/ --oneline | head -5
 
-# Did new large files appear?
+# New large files?
 find . -type f \( -name "*.go" -o -name "*.ts" -o -name "*.py" \) \
   ! -path "*/node_modules/*" ! -path "*/.git/*" \
   -newer CODEBASE.md -exec wc -l {} + 2>/dev/null | sort -rn | head -10
 ```
 
-**Staleness signals — update CODEBASE.md when:**
-- A Danger Zone file was heavily modified
-- CI workflow changed (new steps = new conventions)
-- A new large file appeared not in the Architecture Map
-- A new contributor joined (authorship map is wrong)
-- Something documented in Conventions was visibly violated in recent PRs
+**Update when:** Danger Zone modified heavily, CI changed, new large file appeared,
+new contributor joined, conventions visibly violated in recent PRs.
 
-**Refresh cadence:** weekly for the first month, monthly after. Someone new will
-use this document — keep it accurate enough to be trustworthy.
+**Cadence:** weekly first month, monthly after.
 
 ---
 
@@ -710,28 +820,26 @@ use this document — keep it accurate enough to be trustworthy.
 | "I'll read all the code first, then start" | You'll never start. Map critical paths, not the whole codebase |
 | "This code is messy, I should clean it up" | You don't understand it yet. Cleanup before understanding = silent breakage |
 | "I can see what this does, I don't need CODEBASE.md" | You'll forget. You'll also hand it to the next person who joins |
-| "The Danger Zones need fixing most" | They need fixing eventually. They don't need fixing by someone new |
-| "I'll skip Phase 7, I remember why I wrote this" | You don't. The git log will prove it. |
-| "I'll think of questions as they come up" | You won't — you'll be heads-down in code. Phase 5 forces the questions now. |
-| "I don't need touch mode, I've read the codebase" | Your mental model was built on a snapshot. Touch mode applies it to now. |
+| "I'll skip the local dev guide, I'll figure it out" | You'll spend 3 hours on a missing env var that's already in the Gotchas section |
+| "I'll think of questions as they come up" | You won't — you'll be heads-down in code |
+| "I don't need preflight, I've read the conventions" | Your mental model of conventions is probabilistic. Preflight is deterministic |
+| "I know what this ticket needs, I don't need task mode" | You know the feature. You don't know which files to avoid |
 
 ---
 
 ## Red Flags
 
 - Making changes before completing Phase 0
+- Skipping the local dev guide and spending hours on setup instead
 - First contribution touches a Danger Zone
-- "Cleaning up" code before you understand what it does
-- Submitting a PR in the wrong style because you skipped convention extraction
+- Team Questions are generic ("why is X written this way?") not specific
+- Team Questions have no priority tiers — everything looks equally urgent
+- Executive Brief uses technical jargon — if an exec can't read it, rewrite it
 - CODEBASE.md sections have no confidence tags
-- CODEBASE.md has empty Open Questions — that means you're not paying attention
-- Team Questions are generic ("why is X written this way") not specific
-- Team Questions have no priority tiers — everything is equally urgent
-- Treating a large refactor as a safe first contribution
-- Phase 6 produced a category ("I'll fix a test") not a specific candidate
+- Pushing a PR without running preflight when touching a Danger Zone
+- Starting a task without running task mode when the scope is unclear
 - Abandoning CODEBASE.md after week one — it becomes more valuable as it grows
-- Running return mode in join order — skipping archaeology misreads conventions as intentional
-- Modifying a file without running touch mode when it's in a Danger Zone
+- Running return mode in join order — skipping archaeology misreads conventions
 
 ---
 
@@ -740,26 +848,33 @@ use this document — keep it accurate enough to be trustworthy.
 **Core (all modes):**
 - [ ] Can describe what the system does in one paragraph without looking at README
 - [ ] Can trace a request from entry point to exit
-- [ ] Architecture Map contains a Mermaid diagram (plain language for non-technical)
+- [ ] Architecture Map contains a Mermaid diagram (plain labels for non-technical)
 - [ ] Every CODEBASE.md section has a confidence tag (✅ / ⚠️ / ❓)
-- [ ] Gotchas section present — even if empty with "none found"
+- [ ] Gotchas section present — even if "none found"
 - [ ] Danger Zones listed with reasons and "when to touch" guidance
-- [ ] Team Questions have 3 tiers (🔴 / 🟡 / 🟢) with 5–12 total questions
 - [ ] Open Questions section exists and is non-empty
-- [ ] CODEBASE.md has all sections populated — not placeholder text
 
-**join / return mode:**
-- [ ] Commit message format and PR size norms documented
-- [ ] Phase 6 produced a specific candidate: file + line + fix — not a category
+**Technical users:**
+- [ ] Local Dev Guide is an ordered list of real commands — no vague steps
+- [ ] Local Dev Guide includes "verify it works" check
+- [ ] Team Questions: 3 tiers, 5–12 questions total, all specific
+- [ ] Phase 8 produced file + line + fix — not a category
+
+**Non-technical users:**
+- [ ] Architecture diagram uses plain language labels
+- [ ] Team Questions framed for group meetings, not 1:1s
+- [ ] Executive Brief has no code, no file paths, no jargon
+- [ ] Executive Brief ends with a clear overall assessment
 
 **return mode:**
 - [ ] Archaeology Notes explains key decisions and what surprised you
-- [ ] Phase 7 ran before Phase 2 — conventions read through the lens of intent
+- [ ] Phase 9 ran before Phase 2
 
 **audit mode:**
-- [ ] Merge rate and average PR-to-merge time documented
-- [ ] Go / no-go decision in CODEBASE.md with explicit reasoning
+- [ ] Merge rate and PR-to-merge time documented
+- [ ] Go/no-go decision with explicit reasoning
 
-**touch mode (ongoing):**
-- [ ] Risk level assessed before modifying any Danger Zone file
-- [ ] Reviewer identified from authorship before opening a PR
+**Ongoing modes:**
+- [ ] Touch: risk level assessed before any Danger Zone modification
+- [ ] Preflight: run before every PR that touches Danger Zones or lacks tests
+- [ ] Task: relevant files, Danger Zone proximity, and reviewer identified before starting
