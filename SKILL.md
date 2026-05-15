@@ -6,7 +6,7 @@ description: >
   an OSS project before contributing. Builds a verified mental model — what the
   system does, where data flows, what the implicit conventions are, and which
   files are dangerous to touch first — producing a living CODEBASE.md.
-version: 1.1
+version: 2.0
 ---
 
 # Codebase Onboarding
@@ -57,7 +57,8 @@ Then explain the difference so the user can answer accurately:
 > **If you're non-technical:** I'll still run all the same investigation, but
 > I'll translate everything into plain language. No code in the output — just
 > what the system does, what's risky, and what you need to know to make
-> decisions or have informed conversations with engineers.
+> decisions or have informed conversations with engineers. I'll also generate
+> a visual diagram of how the system fits together.
 
 ---
 
@@ -89,11 +90,11 @@ Wait for the answer to Question 1, then ask about their goal — and tailor the 
 
 | Profile + Goal | What changes |
 |----------------|-------------|
-| Technical + contribute | Full workflow including Phase 4 (first safe contribution) |
+| Technical + contribute | Full workflow including Phase 5 (first safe contribution) |
 | Technical + own/maintain | Full depth; extra attention to Danger Zones and authorship |
-| Technical + review | Phases 0–3 with security/quality lens; skip Phase 4 |
+| Technical + review | Phases 0–3 with security/quality lens; skip Phase 5 |
 | Technical + evaluate OSS | audit mode — contributor signal, merge rate, PR velocity |
-| Non-technical + understand | Phases 0–3; all output in plain language; no code in CODEBASE.md |
+| Non-technical + understand | Phases 0–3; plain language output; Mermaid diagram in Phase 1 |
 | Non-technical + decide | Phases 0–3 + written recommendation section in CODEBASE.md |
 | Non-technical + evaluate | audit mode in plain language; go/no-go framing in output |
 
@@ -109,13 +110,14 @@ Modes change which phases run and in what order. Don't follow join order for ret
 |-------|------|--------|-------|
 | 0 — Bootstrap | ✓ first | ✓ first | ✓ first |
 | 1 — Critical Paths | ✓ | ✓ | ✓ |
-| 2 — Conventions | ✓ | ✓ after Phase 5 | ✓ |
-| 3 — Danger Zones | ✓ | ✓ after Phase 5 | ✓ |
-| 4 — First Safe Contribution | ✓ | ✓ | skip |
-| 5 — Archaeology | skip | ✓ before Phase 2 | skip |
-| 6 — Contributor Signal | skip | skip | ✓ |
+| 2 — Conventions | ✓ | ✓ after Phase 6 | ✓ |
+| 3 — Danger Zones | ✓ | ✓ after Phase 6 | ✓ |
+| 4 — Team Questions | ✓ | ✓ | ✓ |
+| 5 — First Safe Contribution | ✓ | ✓ | skip |
+| 6 — Archaeology | skip | ✓ before Phase 2 | skip |
+| 7 — Contributor Signal | skip | skip | ✓ |
 
-**In return mode:** run Phase 5 (Archaeology) immediately after Phase 1. You need
+**In return mode:** run Phase 6 (Archaeology) immediately after Phase 1. You need
 to know why decisions were made before you can evaluate whether the current
 conventions are intentional or legacy drift.
 
@@ -128,10 +130,11 @@ The skill produces and maintains a single living document. Not a one-time scan.
 ```
 CODEBASE.md
 ├── What This Is          # one-paragraph system description
+├── Architecture Map      # Mermaid diagram + component description
 ├── Critical Paths        # entry points → processing → exit
-├── Architecture Map      # key components and how they connect
 ├── Conventions           # implicit rules the README doesn't mention
 ├── Danger Zones          # what not to touch first, and why
+├── Team Questions        # what only humans can answer — bring to your first 1:1
 ├── Open Questions        # still unclear — actively maintained
 └── Contribution Log      # join/return: changes + learnings
                           # audit: merge rate, PR velocity, go/no-go
@@ -202,11 +205,41 @@ ls packages/ apps/ services/ 2>/dev/null | head -20
 For each entry point: trace the data one level deep. What format comes in? What
 transformation happens? What goes out?
 
-Write these as **Critical Paths** and the component layout as **Architecture Map**
-in CODEBASE.md.
+Write these as **Critical Paths** in CODEBASE.md.
 
 Don't trace everything. Two or three critical paths beat a full audit you'll
 abandon.
+
+### Architecture Map (all users)
+
+After tracing the critical paths, generate a Mermaid diagram of the component
+layout and write it into the **Architecture Map** section of CODEBASE.md.
+
+**For technical users** — show file/package names and data flow direction:
+
+```mermaid
+graph LR
+    Client -->|HTTP| API[api/routes.go]
+    API --> Auth[auth/middleware.go]
+    Auth --> Handler[handlers/user.go]
+    Handler --> DB[(postgres)]
+    Handler --> Cache[(redis)]
+```
+
+**For non-technical users** — use plain names, no file paths, no code:
+
+```mermaid
+graph LR
+    User -->|sends request| API[Web API]
+    API --> Auth[Login Check]
+    Auth --> Logic[Business Logic]
+    Logic --> DB[(Database)]
+    Logic --> Cache[(Fast Cache)]
+```
+
+The diagram is the most shareable artifact from the entire session. A non-technical
+stakeholder can put it in Notion or present it in a meeting. Keep it to 10 nodes
+maximum — clarity beats completeness.
 
 ---
 
@@ -279,54 +312,129 @@ Write **Danger Zones** in CODEBASE.md as a table:
 
 ---
 
-## Phase 4: First Safe Contribution
+## Phase 4: Questions for Your Team
+
+**(all modes)**
+
+Every phase surfaces things code can't answer: why a decision was made, who
+actually owns an area, what the undocumented rule is that everyone knows.
+Those gaps don't go into Open Questions and sit there — they become specific,
+high-quality questions to bring to your first team conversation.
+
+After completing Phases 1–3 (or 6 in return mode), synthesise what was found
+and generate the **Team Questions** section of CODEBASE.md:
+
+**What to look for:**
+
+- Anomalies that need a human explanation: coverage gaps in critical paths,
+  files that are huge but rarely touched, recent reverts with no explanation
+- Ownership gaps: areas where authorship is spread thin or where the last
+  commit was years ago
+- Decisions that look deliberate but aren't documented: an unusual architecture
+  pattern, a library choice that seems outdated, a TODO that's been there for 3 years
+- Things you couldn't determine from code alone: deployment process, on-call
+  rotation, what "done" means for a PR
+
+**Format each question specifically** — not "why is auth written this way" but
+"the auth module has no tests and was last touched 18 months ago — is that
+intentional, or is it a known gap?" Vague questions get vague answers.
+
+**Example output:**
+
+```
+## Team Questions
+
+1. `payments/sync.go` has been reverted 3 times in the last 6 months — what
+   keeps breaking there, and is there a fix in progress?
+
+2. There's no staging environment in CI — is deployment gated on anything
+   before production, or does everything go straight through?
+
+3. `core/engine.go` is 2,400 lines with 47 TODOs. Is there a plan to break
+   it up, or is it intentionally monolithic for a reason?
+
+4. The git log shows two contributors own 80% of the auth module. Who's the
+   right person to review auth PRs if they're both unavailable?
+
+5. The README says to run `make test` but CI runs `pytest -x`. Which one
+   should I use locally — and why are they different?
+```
+
+Aim for 5–10 questions. Fewer means you weren't paying attention. More means
+you're not filtering. Bring this list to your first 1:1 or team meeting.
+
+---
+
+## Phase 5: First Safe Contribution
 
 **(join and return modes only — skip in audit)**
 
-The only real test of whether a mental model is correct is a change that
-breaks something unexpected. Claude identifies and drafts the candidate
-change; the human reviews, runs it locally, and submits. Neither party
-should bypass the other here — Claude doesn't know the team politics, the
-human doesn't know where the landmines are yet.
+The only real test of a mental model is a change that could break something.
+Claude finds a specific candidate and drafts the change; the human reviews,
+runs it locally, and submits. Neither party bypasses the other — Claude doesn't
+know the team politics, the human doesn't know where the landmines are yet.
 
-**Good targets:**
+### Finding the candidate
+
+Don't describe a category of contribution — find the actual one.
+
+```bash
+# Failing or flaky tests
+npm test 2>&1 | grep -E "FAIL|✗|Error" | head -20
+pytest --tb=no -q 2>&1 | grep -E "FAILED|ERROR" | head -20
+go test ./... 2>&1 | grep -E "FAIL|panic" | head -20
+
+# Lint / type errors that CI flags
+npm run lint 2>&1 | head -30
+npx tsc --noEmit 2>&1 | head -30
+golangci-lint run 2>&1 | head -30
+ruff check . 2>&1 | head -30
+
+# Good first issues on GitHub
+gh issue list --label "good first issue" --limit 10 2>/dev/null
+gh issue list --label "help wanted" --limit 10 2>/dev/null
+
+# Broken examples or commands in docs
+grep -rn "```" docs/ --include="*.md" -A5 | grep -E "npm |go |python " | head -20
+
+# Obvious doc errors: wrong file paths, dead links
+grep -rn "http" README.md CONTRIBUTING.md --include="*.md" | grep -v "^Binary" | head -20
+```
+
+Pick **one** candidate. Document it with: file + line, what's wrong, what the
+fix is, why it's safe. If nothing surfaces, say so — that's also signal.
+
+**What to avoid:**
 
 ```
-✓ A failing or flaky test
-✓ A documentation error (wrong command, outdated example, broken link)
-✓ A type or lint error CI flags but doesn't block on
-✓ An explicit "good first issue" or "help wanted" label
 ✗ A refactor of anything (too much blast radius, too little context)
 ✗ A new feature (the right approach isn't clear yet)
 ✗ Anything in a Danger Zone
 ✗ "Cleaning up" code that isn't fully understood yet
 ```
 
+### Before submitting
+
+```bash
+# Run exactly what CI runs (from Phase 0)
+# Confirm you're not touching Danger Zones
+git diff --stat
+```
+
 Claude's role: find the target, draft the change, explain the reasoning.
 Human's role: run CI locally, review the diff, own the submission.
 
-```bash
-# Run the checks CI runs — use the commands from Phase 0
-# (Makefile targets, package.json scripts, or workflow run: steps)
-
-# Confirm you're not touching Danger Zones
-git diff --stat
-
-# Scope tests to what you changed
-# (don't run the full suite blind on a large repo until you know what's slow)
-```
-
-Write what was learned from this contribution in the **Contribution Log**. Even
-"nothing broke and the review was fast" is signal.
+Write what was learned in the **Contribution Log**. Even "nothing broke and
+the review was fast" is signal.
 
 ---
 
-## Phase 5: Archaeology
+## Phase 6: Archaeology
 
 **(return mode only — run this before Phases 2 and 3)**
 
-When returning to your own old code, the question shifts from "what does this do"
-to "why did I do it this way." Answer that before evaluating conventions.
+When returning to your own old code, the question shifts from "what does this
+do" to "why did I do it this way." Answer that before evaluating conventions.
 
 ```bash
 # What was I thinking?
@@ -353,7 +461,7 @@ Then continue to Phase 2. Archaeology reframes what you'll see there.
 
 ---
 
-## Phase 6: Contributor Signal
+## Phase 7: Contributor Signal
 
 **(audit mode only)**
 
@@ -361,12 +469,12 @@ Before investing time in an OSS contribution, verify it's worth it.
 
 ```bash
 # Is the project active?
-git log --format="%ad" --date=short | head -5   # last commits
-gh issue list --state open --limit 5            # issue activity
-gh pr list --state open --limit 5               # PR activity
+git log --format="%ad" --date=short | head -5
+gh issue list --state open --limit 5
+gh pr list --state open --limit 5
 
 # Are PRs actually reviewed and merged?
-gh pr list --state closed --limit 20 | grep -v "MERGED"  # rejected PRs
+gh pr list --state closed --limit 20 | grep -v "MERGED"
 
 # How long do PRs sit?
 gh pr list --state closed --json mergedAt,createdAt --limit 20 \
@@ -383,7 +491,44 @@ for p in prs:
 ```
 
 Add to CODEBASE.md: merge rate, average PR-to-merge time, maintainer
-responsiveness. These predict whether your contribution will land.
+responsiveness, and a go/no-go recommendation with reasoning.
+
+---
+
+## Keeping CODEBASE.md Current
+
+A CODEBASE.md written today is accurate today. Without maintenance it becomes
+misleading within weeks. Run this check periodically — or whenever the codebase
+feels like it's drifted from what you documented.
+
+```bash
+# What changed since CODEBASE.md was last updated?
+git log --since="$(git log --follow -- CODEBASE.md --format='%ad' \
+  --date=short | head -1)" --format=format: --name-only \
+  | grep -v "^$" | sort | uniq -c | sort -rn | head -20
+
+# Did the Danger Zones get touched?
+# (replace with your actual danger zone paths)
+git log --since="2 weeks ago" -- src/core/ auth/ migrations/ --oneline | head -10
+
+# Did CI change? (new steps = new conventions)
+git log --since="2 weeks ago" -- .github/workflows/ --oneline | head -5
+
+# Did new large files appear?
+find . -type f \( -name "*.go" -o -name "*.ts" -o -name "*.py" \) \
+  ! -path "*/node_modules/*" ! -path "*/.git/*" \
+  -newer CODEBASE.md -exec wc -l {} + 2>/dev/null | sort -rn | head -10
+```
+
+**Staleness signals — update CODEBASE.md when:**
+- A Danger Zone file was heavily modified
+- CI workflow changed (new steps = new conventions)
+- A new large file appeared that wasn't in the Architecture Map
+- A new contributor joined (authorship map is now wrong)
+- Something you documented in Conventions was visibly violated in recent PRs
+
+**Refresh cadence:** weekly for the first month, monthly after that. The
+document earns its keep as a team onboarding artifact — someone new will use it.
 
 ---
 
@@ -397,8 +542,9 @@ responsiveness. These predict whether your contribution will land.
 | "I'll read all the code first, then start" | You'll never start. Map critical paths, not the whole codebase |
 | "This code is messy, I should clean it up" | You don't understand it yet. Cleanup before understanding = silent breakage |
 | "I can see what this does, I don't need CODEBASE.md" | You'll forget. You'll also hand it to the next person who joins |
-| "The Danger Zones need fixing most" | They need fixing eventually. They don't need fixing by someone new to the codebase |
-| "I'll skip Phase 5, I remember why I wrote this" | You don't. The git log will prove it. |
+| "The Danger Zones need fixing most" | They need fixing eventually. They don't need fixing by someone new |
+| "I'll skip Phase 6, I remember why I wrote this" | You don't. The git log will prove it. |
+| "I'll think of questions to ask as they come up" | You won't — you'll be heads-down in code. Phase 4 forces the questions now. |
 
 ---
 
@@ -409,9 +555,11 @@ responsiveness. These predict whether your contribution will land.
 - "Cleaning up" code before you understand what it does
 - Submitting a PR in the wrong style because you skipped convention extraction
 - CODEBASE.md has empty Open Questions — that means you're not paying attention
+- Team Questions section is empty or generic — means you weren't paying attention either
 - Treating a large refactor as a safe first contribution
 - Abandoning CODEBASE.md after the first week — it becomes more valuable as it grows
 - Running return mode in join order — skipping archaeology means you'll misread conventions as intentional
+- Phase 5 contribution was a category ("I'll fix a test") not a specific candidate ("test_auth.py line 47")
 
 ---
 
@@ -420,18 +568,20 @@ responsiveness. These predict whether your contribution will land.
 **Core (all modes):**
 - [ ] Can describe what the system does in one paragraph without looking at README
 - [ ] Can trace a request from entry point to exit
+- [ ] Architecture Map contains a Mermaid diagram
 - [ ] Danger Zones are listed with reasons and "when to touch" guidance
+- [ ] Team Questions section has 5–10 specific, non-generic questions
 - [ ] Open Questions section exists and is non-empty (actively maintained)
 - [ ] CODEBASE.md has all sections populated — not placeholder text
 
 **join / return mode:**
-- [ ] Commit message format and PR size norms are documented in CODEBASE.md
-- [ ] First safe contribution identified, validated locally, and submitted or in-progress
+- [ ] Commit message format and PR size norms are documented
+- [ ] Phase 5 produced a specific contribution candidate with file + line + fix — not just a category
 
 **return mode:**
-- [ ] Archaeology Notes section explains the key decisions and what surprised you
-- [ ] Phase 5 ran before Phase 2 — conventions were read through the lens of intent
+- [ ] Archaeology Notes explains the key decisions and what surprised you
+- [ ] Phase 6 ran before Phase 2 — conventions read through the lens of intent
 
 **audit mode:**
 - [ ] Merge rate and average PR-to-merge time documented
-- [ ] Go / no-go decision documented in CODEBASE.md with reasoning
+- [ ] Go / no-go decision in CODEBASE.md with explicit reasoning
