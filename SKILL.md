@@ -7,7 +7,7 @@ description: >
   system does, where data flows, what the implicit conventions are, and which
   files are dangerous to touch first — producing a living CODEBASE.md with
   active modes for PR pre-flight, task mapping, and mid-PR file risk assessment.
-version: 2.0.0
+version: 1.1.0
 ---
 
 # Codebase Onboarding
