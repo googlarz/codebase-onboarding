@@ -1,8 +1,8 @@
 # codebase-onboarding
 
-**For developers:** Your PM just shipped directly to main at 4pm on a Friday. Again. This skill won't stop that — but it gives them the context to know why they shouldn't, what to check first, and who to ping before touching anything critical. Think of it as onboarding insurance. Run it with them once, save yourself the postmortem.
+**For developers:** You joined a new team. The README says "it's pretty simple." There are 47 open TODOs, a file that's 2,800 lines long, and everyone goes quiet when you ask about the payments module. You could spend three days reading files — or run this and know in an hour what to avoid, who owns what, and what to touch first.
 
-**For everyone else:** You've been told the codebase is "pretty straightforward." It is not. There's an env var no one documented, a file everyone avoids for reasons lost to time, and a test suite that breaks if you look at it wrong. Your engineers know this. You don't. Yet. Run this before you touch anything and you'll stop being the person who breaks staging on a Tuesday.
+**For non-technical users:** Someone told you the codebase is "in good shape." Before you say that in a board meeting, sign off on a launch, or make a vendor decision — run this. It maps the system in plain language, surfaces the real risk areas, and generates questions you can actually ask in your next engineering meeting without sounding like you're guessing.
 
 ---
 
