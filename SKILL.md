@@ -36,6 +36,37 @@ Default to **join** if unclear. Ask the user which mode if the context is ambigu
 
 ---
 
+## Intake: Ask First
+
+Before running any phase, ask two questions. The answers reshape every phase that follows.
+
+```
+1. Are you a developer (can read code, run commands) or non-technical
+   (PM, designer, analyst, executive)?
+
+2. What's your goal? Examples:
+   - Make a contribution / fix a bug
+   - Take ownership / become the maintainer
+   - Understand what the system does before a decision
+   - Evaluate whether to adopt / buy / invest
+   - Do a security or quality review
+```
+
+**Why it matters:**
+
+| Profile | Adjustments |
+|---------|-------------|
+| **Technical** | Full phase workflow — bash commands, git archaeology, danger zone analysis |
+| **Non-technical** | Skip bash phases; Claude runs commands and translates findings into plain language; CODEBASE.md written without code snippets |
+| **Goal: contribute** | All phases including Phase 4 (first safe contribution) |
+| **Goal: understand/decide** | Phases 0–3 only; Phase 4 replaced with a written summary and recommendation |
+| **Goal: evaluate (audit)** | audit mode — contributor signal over convention detail |
+| **Goal: own/maintain** | return or join mode with full depth; extra attention to Danger Zones |
+
+Never assume. A non-technical stakeholder running audit mode needs a very different output than a developer doing the same.
+
+---
+
 ## Phase Order by Mode
 
 Modes change which phases run and in what order. Don't follow join order for return.
