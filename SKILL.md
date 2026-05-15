@@ -7,7 +7,7 @@ description: >
   system does, where data flows, what the implicit conventions are, and which
   files are dangerous to touch first — producing a living CODEBASE.md and an
   active "before you touch this" query layer.
-version: 3.0
+version: 1.0.0
 ---
 
 # Codebase Onboarding
