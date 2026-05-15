@@ -38,32 +38,66 @@ Default to **join** if unclear. Ask the user which mode if the context is ambigu
 
 ## Intake: Ask First
 
-Before running any phase, ask two questions. The answers reshape every phase that follows.
+Before running any phase, ask two questions in sequence. The answers reshape every phase that follows.
 
-```
-1. Are you a developer (can read code, run commands) or non-technical
-   (PM, designer, analyst, executive)?
+### Question 1: Technical profile
 
-2. What's your goal? Examples:
-   - Make a contribution / fix a bug
-   - Take ownership / become the maintainer
-   - Understand what the system does before a decision
-   - Evaluate whether to adopt / buy / invest
-   - Do a security or quality review
-```
+Ask:
 
-**Why it matters:**
+> "Are you a developer who can read code and run terminal commands, or are you
+> non-technical — a PM, designer, analyst, or executive who needs to understand
+> the system without diving into the code itself?"
 
-| Profile | Adjustments |
-|---------|-------------|
-| **Technical** | Full phase workflow — bash commands, git archaeology, danger zone analysis |
-| **Non-technical** | Skip bash phases; Claude runs commands and translates findings into plain language; CODEBASE.md written without code snippets |
-| **Goal: contribute** | All phases including Phase 4 (first safe contribution) |
-| **Goal: understand/decide** | Phases 0–3 only; Phase 4 replaced with a written summary and recommendation |
-| **Goal: evaluate (audit)** | audit mode — contributor signal over convention detail |
-| **Goal: own/maintain** | return or join mode with full depth; extra attention to Danger Zones |
+Then explain the difference so the user can answer accurately:
 
-Never assume. A non-technical stakeholder running audit mode needs a very different output than a developer doing the same.
+> **If you're technical:** I'll run shell commands, read source files, trace
+> execution paths, and map git history. The output will include code snippets,
+> file paths, and technical conventions — things you can act on directly.
+>
+> **If you're non-technical:** I'll still run all the same investigation, but
+> I'll translate everything into plain language. No code in the output — just
+> what the system does, what's risky, and what you need to know to make
+> decisions or have informed conversations with engineers.
+
+---
+
+### Question 2: Goal
+
+Wait for the answer to Question 1, then ask about their goal — and tailor the examples to match their profile.
+
+**If technical:**
+
+> "What are you trying to do with this codebase? For example:
+> - Make a contribution or fix a specific bug
+> - Take ownership — become the go-to maintainer
+> - Review it for quality, security, or architecture concerns
+> - Evaluate an open-source project before contributing
+> - Get up to speed quickly after being away for months"
+
+**If non-technical:**
+
+> "What do you need to understand about this codebase? For example:
+> - What the system actually does and how it fits together
+> - Whether the team is building the right thing
+> - How risky or stable it is before a launch, acquisition, or vendor decision
+> - What's holding the team back or slowing them down
+> - How to have a more informed conversation with the engineers building it"
+
+---
+
+**Why both questions matter:**
+
+| Profile + Goal | What changes |
+|----------------|-------------|
+| Technical + contribute | Full workflow including Phase 4 (first safe contribution) |
+| Technical + own/maintain | Full depth; extra attention to Danger Zones and authorship |
+| Technical + review | Phases 0–3 with security/quality lens; skip Phase 4 |
+| Technical + evaluate OSS | audit mode — contributor signal, merge rate, PR velocity |
+| Non-technical + understand | Phases 0–3; all output in plain language; no code in CODEBASE.md |
+| Non-technical + decide | Phases 0–3 + written recommendation section in CODEBASE.md |
+| Non-technical + evaluate | audit mode in plain language; go/no-go framing in output |
+
+Never assume. A non-technical executive evaluating an acquisition needs a completely different output than a developer taking over a repo.
 
 ---
 
