@@ -1,5 +1,11 @@
 # codebase-onboarding
 
+**For developers:** Your PM just shipped directly to main at 4pm on a Friday. Again. This skill won't stop that — but it gives them the context to know why they shouldn't, what to check first, and who to ping before touching anything critical. Think of it as onboarding insurance. Run it with them once, save yourself the postmortem.
+
+**For everyone else:** You've been told the codebase is "pretty straightforward." It is not. There's an env var no one documented, a file everyone avoids for reasons lost to time, and a test suite that breaks if you look at it wrong. Your engineers know this. You don't. Yet. Run this before you touch anything and you'll stop being the person who breaks staging on a Tuesday.
+
+---
+
 **Stop guessing. Build the right mental model before you break something.**
 
 New repo. Inherited codebase. Your own code after six months away. The instinct is to start reading files. That's slow, incomplete, and leaves you blind to the things that will actually burn you — the undocumented env var, the file everyone avoids, the test suite that breaks when run in parallel.
