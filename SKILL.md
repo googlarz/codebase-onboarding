@@ -7,7 +7,7 @@ description: >
   system does, where data flows, what the implicit conventions are, and which
   files are dangerous to touch first — producing a living CODEBASE.md with
   active modes for PR pre-flight, task mapping, and mid-PR file risk assessment.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Codebase Onboarding
@@ -114,6 +114,7 @@ Wait for the answer to Question 1, then tailor the examples:
 |                    | non-technical: meeting format | non-technical: meeting format | non-technical: meeting format |
 | 7 — Executive Brief | non-technical only | non-technical only | non-technical only |
 | 8 — First Contribution | technical only | technical only | skip |
+| 8b — Ramp-up Timeline | technical only | technical only | skip |
 | 9 — Archaeology | skip | ✓ before Phase 2 | skip |
 | 10 — Contributor Signal | skip | skip | ✓ |
 
@@ -134,6 +135,7 @@ CODEBASE.md
 ├── Gotchas               # what silently burns new contributors
 ├── Team Questions        # technical: 1:1 format | non-technical: meeting format
 ├── Executive Brief       # non-technical only: one-page health summary
+├── Ramp-up Timeline      # technical only: week-by-week gates derived from findings
 ├── Open Questions        # still unclear — actively maintained
 └── Contribution Log      # join/return: changes + learnings
                           # audit: merge rate, PR velocity, go/no-go
@@ -572,6 +574,81 @@ Write what was learned in **Contribution Log**.
 
 ---
 
+## Phase 8b: Ramp-up Timeline
+
+**(technical users — join and return modes only)**
+
+After Phases 0–8, generate a week-by-week plan derived from what was actually
+found — not generic onboarding advice. Every checkpoint is grounded in the
+specific state of this codebase.
+
+**How to derive each week:**
+
+- **Week 1** — driven by: local dev guide complexity, blocking team questions,
+  first safe contribution target
+- **Week 2** — driven by: convention count and strictness, PR process signals
+  from git log, important team questions still open
+- **Week 4** — driven by: number of danger zones, critical path complexity,
+  depth of archaeology (return mode), authorship breadth
+
+Checkboxes must be specific to this codebase — not "understand the system" but
+"can explain the auth → handler → DB path without looking at CODEBASE.md."
+
+**Example output:**
+
+```markdown
+## Ramp-up Timeline ⚠️ Inferred
+
+### Week 1 — get oriented and unblocked
+
+Technical gates:
+  □ Local dev running and health check passes
+  □ STRIPE_WEBHOOK_SECRET and JWT_SECRET added to .env (ask alice@)
+  □ All 47 migrations run, seed data loaded, tests passing locally
+
+Knowledge gates:
+  □ Can explain what the system does without looking at CODEBASE.md
+  □ Can trace a request from Client → API → Auth → Handler → DB
+  □ Blocking team questions answered (2 of them — see Team Questions 🔴)
+
+Contribution gate:
+  □ First safe contribution submitted (target: test_auth.py line 47)
+
+### Week 2 — know how the team works
+
+Convention gates:
+  □ First PR reviewed and merged without commit message feedback
+  □ Conventional commits format used without checking CODEBASE.md
+  □ PR size within team norm (< 400 lines based on git log analysis)
+
+Relationship gates:
+  □ Important team questions answered (3 of them — see Team Questions 🟡)
+  □ Know who to ping for auth (alice@), payments (bob@), API (bob@)
+
+### Week 4 — own the codebase
+
+Depth gates:
+  □ Can name all Danger Zones without looking at CODEBASE.md
+  □ Touch mode no longer needed for files outside Danger Zones
+  □ Can review someone else's PR for convention compliance
+
+Contribution gate:
+  □ Second contribution: something outside the "safe" category
+  □ CODEBASE.md updated with anything that was wrong or missing
+
+### Return mode only — recovery gate (end of Week 1)
+  □ Archaeology complete: key decisions documented in CODEBASE.md
+  □ "What changed while I was away" fully absorbed
+  □ Know which prior mental model assumptions are now wrong
+```
+
+Write this as **Ramp-up Timeline** in CODEBASE.md immediately after Team
+Questions. For return mode, include the recovery gate. Adjust timelines if the
+codebase is unusually large (>100k lines → add a week) or simple (<5k lines →
+compress weeks 1–2 into one).
+
+---
+
 ## Phase 9: Archaeology
 
 **(return mode only — run before Phases 2 and 3)**
@@ -679,6 +756,9 @@ git diff HEAD --stat
 # Commit message
 git log --format="%s" -1
 
+# Branch name
+git rev-parse --abbrev-ref HEAD
+
 # Tests in the diff?
 git diff HEAD --name-only | grep -iE "test|spec" | head -10
 git diff HEAD --name-only | grep -viE "test|spec" | head -10
@@ -688,35 +768,105 @@ for f in $(git diff HEAD --name-only); do
   echo "--- $f ---"
   git log --follow --format="%ae" -- "$f" | sort | uniq -c | sort -rn | head -3
 done
+
+# Any Danger Zone files in diff?
+# (cross-reference git diff HEAD --name-only against CODEBASE.md Danger Zones)
+
+# Gotchas relevant to changed files?
+# (cross-reference touched paths against CODEBASE.md Gotchas)
 ```
 
-Cross-reference findings against CODEBASE.md and output a pre-flight report:
+### Output format — every flag includes the fix
+
+Each ❌ must include: what's wrong, the corrected version, the exact action to
+take, and why it matters. ⚠️ includes context and what to watch for. ✅ is brief.
 
 ```
 PR Pre-flight: feat/add-rate-limiting
+Branch: feat/add-rate-limiting (3 source files, 0 test files changed)
 
-✅ Commit message follows conventional commits format
-✅ No Danger Zone files in the diff
-⚠️  auth/middleware.go touched — alice@example.com should review (14 of last 20 commits)
-❌ No test changes for modified source files (convention: every commit touches tests)
-⚠️  payments/ touched — review Gotcha: pre-commit runs eslint --fix, CI does not
+────────────────────────────────────────────────────────
+COMMIT MESSAGE
+────────────────────────────────────────────────────────
+❌ Doesn't follow conventional commits (team uses this in 28 of last 30 commits)
 
-Suggested reviewers:
-  alice@example.com  → auth/middleware.go
-  bob@example.com    → api/routes.go
+   Current:  "add rate limiting"
+   Fix to:   "feat(api): add rate limiting to middleware"
+             └─ type(scope): description
+             Types in use: feat, fix, chore, docs, refactor
+             Scopes in use: api, auth, payments, db
 
-Conventions check:
-  ✅ Branch name matches pattern (feat/*)
-  ✅ Commit is focused (4 files — within team norm)
-  ❌ Missing test coverage for changed files
+   Command:  git commit --amend -m "feat(api): add rate limiting to middleware"
 
-Overall: ⚠️ ADDRESS BEFORE PUSHING
-  → Add tests for changed files
-  → Re-stage after pre-commit hook fires (eslint --fix)
+────────────────────────────────────────────────────────
+FILES CHANGED
+────────────────────────────────────────────────────────
+✅ api/routes.go — not a Danger Zone
+✅ api/middleware.go — not a Danger Zone
+
+⚠️  auth/middleware.go — DANGER ZONE
+   Why: No tests, last touched 18 months ago, security-sensitive
+   Action: Confirm this file needed changing. If yes:
+     → alice@example.com must review (14 of last 20 commits here)
+     → Watch for: session singleton on line 89 — caused a revert last month
+     → Reference: CODEBASE.md Danger Zones, entry 3
+
+────────────────────────────────────────────────────────
+TEST COVERAGE
+────────────────────────────────────────────────────────
+❌ No test files in diff (convention: every commit that touches source touches tests)
+
+   Files changed without tests:
+     api/middleware.go  → add tests to: tests/api/middleware_test.go
+     auth/middleware.go → add tests to: tests/auth/middleware_test.go
+
+   Closest existing test to follow:
+     tests/api/logging_test.go  (added with "feat(api): add request logging")
+     Pattern: TestMiddlewareName_ActionExpectedBehaviour
+
+   Why it matters: CI will pass without tests, but this convention is
+   enforced in code review — you'll get a comment.
+
+────────────────────────────────────────────────────────
+GOTCHAS AFFECTING CHANGED FILES
+────────────────────────────────────────────────────────
+⚠️  Pre-commit runs eslint --fix on api/ files; CI runs eslint without fix
+   Action: After pre-commit hook fires, re-stage changed files before pushing
+   Command: git add api/middleware.go && git push
+
+⚠️  auth/ tests share a singleton — don't run them with -n flag
+   Command: pytest -p no:xdist tests/auth/ (not pytest -n 4 tests/auth/)
+
+────────────────────────────────────────────────────────
+REVIEWERS
+────────────────────────────────────────────────────────
+Required:  alice@example.com → auth/middleware.go (Danger Zone, her area)
+Suggested: bob@example.com   → api/ (12 of last 20 commits to api/)
+
+────────────────────────────────────────────────────────
+VERDICT
+────────────────────────────────────────────────────────
+⚠️  ADDRESS BEFORE PUSHING (2 items)
+
+  1. Fix commit message:
+     git commit --amend -m "feat(api): add rate limiting to middleware"
+
+  2. Add tests — at minimum a happy-path test for each changed middleware:
+     → tests/api/middleware_test.go
+     → tests/auth/middleware_test.go
+     Follow pattern in tests/api/logging_test.go
+
+  Then: re-stage after pre-commit hook fires, then push.
 ```
 
-Preflight catches what reviewers would catch — before review. One ❌ means fix
-it. One ⚠️ means be aware. All ✅ means push with confidence.
+**Verdict levels:**
+- `✅ READY TO PUSH` — all checks pass; list what was verified
+- `⚠️ ADDRESS BEFORE PUSHING` — fixable issues; list exact steps in order
+- `❌ DO NOT PUSH` — Danger Zone touched without required reviewer, or breaking convention with no justification
+
+Every fix in the verdict must be a concrete action — a command to run, a file
+to edit, a person to add. Never "consider adding tests." Always "add a test to
+`tests/api/middleware_test.go` following the pattern in `logging_test.go`."
 
 ---
 
@@ -856,9 +1006,11 @@ new contributor joined, conventions visibly violated in recent PRs.
 
 **Technical users:**
 - [ ] Local Dev Guide is an ordered list of real commands — no vague steps
-- [ ] Local Dev Guide includes "verify it works" check
+- [ ] Local Dev Guide includes "verify it works" check and common failures
 - [ ] Team Questions: 3 tiers, 5–12 questions total, all specific
 - [ ] Phase 8 produced file + line + fix — not a category
+- [ ] Ramp-up Timeline checkboxes reference actual file names and question numbers — not generic milestones
+- [ ] Return mode Ramp-up includes recovery gate at end of Week 1
 
 **Non-technical users:**
 - [ ] Architecture diagram uses plain language labels
@@ -876,5 +1028,7 @@ new contributor joined, conventions visibly violated in recent PRs.
 
 **Ongoing modes:**
 - [ ] Touch: risk level assessed before any Danger Zone modification
-- [ ] Preflight: run before every PR that touches Danger Zones or lacks tests
+- [ ] Preflight: every ❌ includes corrected version + exact command to fix it
+- [ ] Preflight: every ⚠️ includes specific action and relevant CODEBASE.md reference
+- [ ] Preflight verdict lists fixes in execution order — not a list to interpret
 - [ ] Task: relevant files, Danger Zone proximity, and reviewer identified before starting
