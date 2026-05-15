@@ -7,7 +7,7 @@ description: >
   system does, where data flows, what the implicit conventions are, and which
   files are dangerous to touch first — producing a living CODEBASE.md with
   active modes for PR pre-flight, task mapping, and mid-PR file risk assessment.
-version: 1.3.0
+version: 1.3.1
 ---
 
 # Codebase Onboarding
@@ -559,8 +559,17 @@ business impact.
    and where should we invest first?
 
 ### Overall assessment
-[One sentence: go/no-go, high/medium/low risk, or what needs to happen
-before this codebase is ready for X — whatever matches the stated goal.]
+[One sentence tied to the user's stated goal from intake:]
+
+- **"assess risk before launch"** → Is this safe to ship this sprint, or does
+  something need fixing first? Name the blocker if there is one.
+- **"evaluate before acquisition/vendor decision"** → Go, no-go, or go with
+  conditions. State the condition explicitly.
+- **"prepare for roadmap/board conversation"** → What's the single most
+  important engineering investment needed, and what business outcome does
+  it unlock?
+- **"understand what the system does"** → One sentence on what it is,
+  who it serves, and how healthy the foundation is.
 ```
 
 ---
@@ -763,6 +772,12 @@ responsiveness, and go/no-go recommendation with reasoning.
 
 **If CODEBASE.md doesn't exist:** Run a reduced assessment from `git log` and file inspection alone — Danger Zone lookup unavailable, but commit history, authorship, and known issues are still accessible. Output a warning: "No CODEBASE.md — running limited touch assessment. Run join mode for full context." Offer to run join before proceeding.
 
+**If CODEBASE.md exists:** Check when it was last updated before using it.
+```bash
+git log --follow --format="%ar" -- CODEBASE.md | head -1
+```
+If older than 4 weeks, warn: "⚠️ CODEBASE.md last updated [X] — Danger Zone and convention data may be stale. Proceed with caution or run return mode first."
+
 > "I'm about to modify `[file or area]` — run touch mode."
 
 ```bash
@@ -796,6 +811,10 @@ Tests covering this:
   tests/auth/middleware_test.go
   tests/integration/session_test.go
 
+  Run these now, before editing, to establish a baseline:
+  pytest tests/auth/middleware_test.go tests/integration/session_test.go
+  A failure before you start is not your bug. A failure after is.
+
 Watch out for:
   Session singleton on line 89 has non-obvious global state —
   this is what caused the revert two weeks ago
@@ -813,6 +832,12 @@ Suggested prompt for your next message:
 **Requires an existing CODEBASE.md. Invoke before opening a PR:**
 
 **If CODEBASE.md doesn't exist:** Preflight cannot assess Danger Zones, conventions, or file ownership without it. Run a minimal check: branch name, commit message format from git log patterns, presence of test files in diff, credential scan. Output: "No CODEBASE.md — running minimal preflight. Danger Zone check unavailable. Run join mode first for full coverage." Do not generate a PR description without CODEBASE.md context.
+
+**If CODEBASE.md exists:** Check staleness first — convention and Danger Zone data older than 4 weeks may no longer reflect reality.
+```bash
+git log --follow --format="%ar" -- CODEBASE.md | head -1
+```
+If stale, prepend a warning to the preflight output.
 
 > "Run preflight on my current changes."
 
@@ -836,6 +861,9 @@ for f in $(git diff HEAD --name-only); do
   echo "--- $f ---"
   git log --follow --format="%ae" -- "$f" | sort | uniq -c | sort -rn | head -3
 done
+
+# PR size vs. team norm (from Phase 2 Conventions)
+git diff HEAD --stat | tail -1   # e.g. "3 files changed, 412 insertions(+), 18 deletions(-)"
 
 # Any Danger Zone files in diff?
 # (cross-reference git diff HEAD --name-only against CODEBASE.md Danger Zones)
@@ -878,6 +906,14 @@ FILES CHANGED
      → alice@example.com must review (14 of last 20 commits here)
      → Watch for: session singleton on line 89 — caused a revert last month
      → Reference: CODEBASE.md Danger Zones, entry 3
+
+────────────────────────────────────────────────────────
+PR SIZE
+────────────────────────────────────────────────────────
+⚠️  430 lines changed — team norm is under 400 (based on last 30 merged PRs)
+
+   Consider splitting: rate limiting logic vs. test files
+   or: api/ changes vs. auth/ changes (different reviewers anyway)
 
 ────────────────────────────────────────────────────────
 TEST COVERAGE
@@ -967,6 +1003,12 @@ to edit, a person to add. Never "consider adding tests." Always "add a test to
 **Requires an existing CODEBASE.md. Invoke when starting any new piece of work:**
 
 **If CODEBASE.md doesn't exist:** Run a degraded version from git history and file naming alone: find the most relevant files via `git log --all -S "[keyword]"`, identify recent contributors, flag obviously risky file types (migrations, auth, CI). Output: "No CODEBASE.md — running degraded task mode. Danger Zone context and convention history unavailable. Consider running join mode first."
+
+**If CODEBASE.md exists:** Check staleness — task mapping based on 4-month-old Danger Zones may point you at files that are no longer risky (or miss ones that are now).
+```bash
+git log --follow --format="%ar" -- CODEBASE.md | head -1
+```
+If stale, flag it before the task output.
 
 > "I've been assigned to add rate limiting to the API."
 > "I need to fix the payment retry logic — what do I need to know?"
@@ -1116,7 +1158,7 @@ new contributor joined, conventions visibly violated in recent PRs.
 - [ ] Architecture diagram uses plain language labels
 - [ ] Team Questions framed for group meetings, not 1:1s
 - [ ] Executive Brief has no code, no file paths, no jargon
-- [ ] Executive Brief ends with a clear overall assessment
+- [ ] Executive Brief overall assessment is framed for the user's stated goal — not generic
 
 **return mode:**
 - [ ] Archaeology Notes explains key decisions and what surprised you
@@ -1128,14 +1170,19 @@ new contributor joined, conventions visibly violated in recent PRs.
 - [ ] Go/no-go decision with explicit reasoning
 
 **Ongoing modes:**
+- [ ] Touch: CODEBASE.md staleness checked before running
 - [ ] Touch: risk level assessed before any Danger Zone modification
+- [ ] Touch: covering tests listed with "run first" baseline instruction
 - [ ] Touch: ends with a suggested scoped prompt for the next message
 - [ ] Touch: if no CODEBASE.md, warning issued and join mode offered
+- [ ] Preflight: CODEBASE.md staleness checked before running
+- [ ] Preflight: PR size checked against team norm from Phase 2
 - [ ] Preflight: every ❌ includes corrected version + exact command to fix it
 - [ ] Preflight: every ⚠️ includes specific action and relevant CODEBASE.md reference
 - [ ] Preflight: PR description draft included before verdict
 - [ ] Preflight verdict lists fixes in execution order — not a list to interpret
 - [ ] Preflight: if no CODEBASE.md, minimal check only with clear warning
+- [ ] Task: CODEBASE.md staleness checked before running
 - [ ] Task: relevant files, Danger Zone proximity, and reviewer identified before starting
 - [ ] Task: ends with a suggested scoped starting prompt
 - [ ] Task: if no CODEBASE.md, degraded mode with clear warning
