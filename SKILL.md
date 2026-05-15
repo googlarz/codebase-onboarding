@@ -7,7 +7,7 @@ description: >
   system does, where data flows, what the implicit conventions are, and which
   files are dangerous to touch first — producing a living CODEBASE.md with
   active modes for PR pre-flight, task mapping, and mid-PR file risk assessment.
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Codebase Onboarding
@@ -98,6 +98,8 @@ Wait for the answer to Question 1, then tailor the examples:
 | Non-technical + decide | Phases 0–6 + recommendation section in executive brief |
 | Non-technical + evaluate | audit mode; go/no-go framing in executive brief |
 
+**Large codebases (>100k LOC):** After Phase 0, ask: "Which subsystem or area is most relevant to your goal?" Scope Phases 1–4 to that area. Investigating a 500k-line Rails monolith end-to-end produces noise, not orientation.
+
 ---
 
 ## Phase Order by Mode
@@ -129,6 +131,7 @@ CODEBASE.md
 ├── What This Is          # one-paragraph system description
 ├── Architecture Map      # Mermaid diagram + component description
 ├── Critical Paths        # entry points → processing → exit
+├── External Integrations # third-party APIs, queues, webhooks — what needs mocking locally
 ├── Local Dev Guide       # technical only: step-by-step to get it running
 ├── Conventions           # implicit rules the README doesn't mention
 ├── Danger Zones          # what not to touch first, and why
@@ -204,10 +207,33 @@ grep -rn "sqlite\|postgres\|mysql\|redis\|mongo" \
 
 # Monorepo
 ls packages/ apps/ services/ 2>/dev/null | head -20
+
+# External integrations — what does this system call out to?
+grep -rnil "stripe\|twilio\|sendgrid\|mailgun\|sentry\|datadog\|launchdarkly\|segment\|mixpanel\|amplitude\|aws\|s3\|sqs\|sns\|pubsub\|kafka\|rabbitmq" \
+  --include="*.go" --include="*.ts" --include="*.py" --include="*.js" \
+  | grep -v "node_modules\|.git\|vendor\|test\|spec" | head -15
+grep -rn "baseURL\|base_url\|API_URL\|WEBHOOK_URL\|SERVICE_URL" \
+  --include="*.env*" --include="*.example" --include="*.ts" --include="*.go" -h \
+  | grep -v "^#" | sort -u | head -10
 ```
 
 Trace each entry point one level deep: format in → transformation → format out.
-Write **Critical Paths** and **Architecture Map** in CODEBASE.md.
+Write **Critical Paths**, **Architecture Map**, and **External Integrations** in CODEBASE.md.
+
+**External Integrations** — list what the system calls out to and what that means locally:
+
+```markdown
+## External Integrations ⚠️ Inferred
+
+| Service | Purpose | Local behavior |
+|---------|---------|---------------|
+| Stripe  | Payments | Needs STRIPE_WEBHOOK_SECRET; use test mode keys |
+| Twilio  | SMS alerts | Requests succeed but no SMS sent in dev |
+| S3      | File storage | LocalStack or mock needed; fails silently otherwise |
+| Redis   | Job queue | docker-compose starts it; required for background jobs |
+```
+
+If an integration has no local substitute, mark it ❓ Gap and add a Team Question.
 
 ### Architecture Map — generated for all users
 
@@ -318,6 +344,14 @@ find . \( -name "setup.sh" -o -name "bootstrap.sh" -o -name "seed.sh" \
 # Port conflicts in tests
 grep -rn "localhost\|127\.0\.0\.1\|:8080\|:3000" \
   --include="*.test.*" --include="*_test.*" -l | head -10
+
+# Flaky test markers and skips
+grep -rn "@pytest.mark.flaky\|@pytest.mark.skip\|it\.skip\|xit(\|xdescribe(\|\.todo(\|t\.Skip(" \
+  --include="*.test.*" --include="*_test.*" -l | head -10
+
+# Approximate test suite run time from CI logs
+grep -B2 -A2 -i "test\|pytest\|jest\|go test" .github/workflows/*.yml 2>/dev/null \
+  | grep -i "timeout\|minutes\|took\|elapsed" | head -5
 ```
 
 Write **Gotchas** — specific, not generic:
@@ -333,6 +367,10 @@ Write **Gotchas** — specific, not generic:
   random failures; always run `pytest -p no:xdist auth/`
 - `scripts/seed.sh` must run before tests — not in README; fails with
   a cryptic foreign key error if skipped
+- 14 tests marked `@pytest.mark.flaky` in `tests/payments/` — they pass
+  on retry; don't treat a single failure there as a regression
+- Full test suite takes ~12 minutes; run `pytest tests/unit/` (~45s) for
+  fast local feedback, CI runs the full suite
 ```
 
 If nothing found: write `## Gotchas ✅ Verified — None found`. That's signal too.
@@ -653,6 +691,26 @@ compress weeks 1–2 into one).
 
 **(return mode only — run before Phases 2 and 3)**
 
+**If CODEBASE.md already exists from a prior session, start here:**
+
+Read CODEBASE.md and compare its claims against current reality before running any commands. Ask: what has drifted since this was written?
+
+```bash
+# When was CODEBASE.md last updated?
+git log --follow --format="%ad %s" --date=short -- CODEBASE.md | head -5
+
+# What changed in the codebase since then?
+git log --since="$(git log --follow -- CODEBASE.md \
+  --format='%ad' --date=short | head -1)" \
+  --format=format: --name-only | grep -v "^$" \
+  | sort | uniq -c | sort -rn | head -20
+
+# Did any Danger Zones get touched heavily?
+# (cross-reference against CODEBASE.md Danger Zones section)
+```
+
+Mark outdated CODEBASE.md sections as `⚠️ Stale` before continuing. This is the most valuable output of return mode — knowing what the old mental model got wrong.
+
 ```bash
 git log --all --format="%ad %s" --date=short | head -40
 find . -name "ADR*" -o -name "DECISION*" -o -path "*/docs/*.md" 2>/dev/null | head -10
@@ -666,6 +724,7 @@ Add **Archaeology Notes** to CODEBASE.md:
 - What you rediscovered that still makes sense
 - What you'd do differently now
 - What you found that surprised you
+- What CODEBASE.md claimed that's no longer true (mark those sections ⚠️ Stale)
 
 Then continue to Phase 2. Archaeology reframes what you'll see there.
 
@@ -701,6 +760,8 @@ responsiveness, and go/no-go recommendation with reasoning.
 ## Touch Mode: Before You Modify Anything
 
 **Requires an existing CODEBASE.md. Invoke at any time:**
+
+**If CODEBASE.md doesn't exist:** Run a reduced assessment from `git log` and file inspection alone — Danger Zone lookup unavailable, but commit history, authorship, and known issues are still accessible. Output a warning: "No CODEBASE.md — running limited touch assessment. Run join mode for full context." Offer to run join before proceeding.
 
 > "I'm about to modify `[file or area]` — run touch mode."
 
@@ -738,6 +799,11 @@ Tests covering this:
 Watch out for:
   Session singleton on line 89 has non-obvious global state —
   this is what caused the revert two weeks ago
+
+Suggested prompt for your next message:
+  "In auth/middleware.go, [describe your specific change].
+   Be minimal — only change what's needed for [your goal].
+   Don't touch the session singleton on line 89."
 ```
 
 ---
@@ -745,6 +811,8 @@ Watch out for:
 ## Preflight Mode: Before You Push
 
 **Requires an existing CODEBASE.md. Invoke before opening a PR:**
+
+**If CODEBASE.md doesn't exist:** Preflight cannot assess Danger Zones, conventions, or file ownership without it. Run a minimal check: branch name, commit message format from git log patterns, presence of test files in diff, credential scan. Output: "No CODEBASE.md — running minimal preflight. Danger Zone check unavailable. Run join mode first for full coverage." Do not generate a PR description without CODEBASE.md context.
 
 > "Run preflight on my current changes."
 
@@ -844,6 +912,30 @@ Required:  alice@example.com → auth/middleware.go (Danger Zone, her area)
 Suggested: bob@example.com   → api/ (12 of last 20 commits to api/)
 
 ────────────────────────────────────────────────────────
+PR DESCRIPTION (draft — edit before posting)
+────────────────────────────────────────────────────────
+Title: feat(api): add rate limiting to middleware
+
+## What
+Added configurable rate limiting to the API middleware layer. Requests
+exceeding the threshold return 429 Too Many Requests with a Retry-After
+header.
+
+## Why
+[Fill in — why is this change needed now?]
+
+## What to test
+- [ ] Rate limit triggers correctly after N requests within window
+- [ ] 429 response includes Retry-After header
+- [ ] Requests within limit pass through without delay
+- [ ] auth/middleware.go behaviour unchanged (verify existing auth tests pass)
+
+## Notes for reviewers
+- auth/middleware.go is touched (Danger Zone — alice@ required)
+- No auth logic changed; rate limit call added before existing auth check
+- Pre-commit will run eslint --fix; re-stage before pushing
+
+────────────────────────────────────────────────────────
 VERDICT
 ────────────────────────────────────────────────────────
 ⚠️  ADDRESS BEFORE PUSHING (2 items)
@@ -873,6 +965,8 @@ to edit, a person to add. Never "consider adding tests." Always "add a test to
 ## Task Mode: Map a Ticket to the Codebase
 
 **Requires an existing CODEBASE.md. Invoke when starting any new piece of work:**
+
+**If CODEBASE.md doesn't exist:** Run a degraded version from git history and file naming alone: find the most relevant files via `git log --all -S "[keyword]"`, identify recent contributors, flag obviously risky file types (migrations, auth, CI). Output: "No CODEBASE.md — running degraded task mode. Danger Zone context and convention history unavailable. Consider running join mode first."
 
 > "I've been assigned to add rate limiting to the API."
 > "I need to fix the payment retry logic — what do I need to know?"
@@ -926,6 +1020,11 @@ Risk level: LOW
 Suggested first step:
   Read api/middleware.go (the logging middleware) — it's the template
   for what you're about to build.
+
+Suggested starting prompt:
+  "In api/middleware.go, following the same pattern as the logging
+   middleware, add a rate limiting middleware. Don't touch
+   auth/middleware.go. Add a test in tests/api/middleware_test.go."
 ```
 
 ---
@@ -999,6 +1098,7 @@ new contributor joined, conventions visibly violated in recent PRs.
 - [ ] Can describe what the system does in one paragraph without looking at README
 - [ ] Can trace a request from entry point to exit
 - [ ] Architecture Map contains a Mermaid diagram (plain labels for non-technical)
+- [ ] External Integrations table present — even if empty
 - [ ] Every CODEBASE.md section has a confidence tag (✅ / ⚠️ / ❓)
 - [ ] Gotchas section present — even if "none found"
 - [ ] Danger Zones listed with reasons and "when to touch" guidance
@@ -1021,6 +1121,7 @@ new contributor joined, conventions visibly violated in recent PRs.
 **return mode:**
 - [ ] Archaeology Notes explains key decisions and what surprised you
 - [ ] Phase 9 ran before Phase 2
+- [ ] If CODEBASE.md existed, outdated sections marked ⚠️ Stale before updating
 
 **audit mode:**
 - [ ] Merge rate and PR-to-merge time documented
@@ -1028,7 +1129,13 @@ new contributor joined, conventions visibly violated in recent PRs.
 
 **Ongoing modes:**
 - [ ] Touch: risk level assessed before any Danger Zone modification
+- [ ] Touch: ends with a suggested scoped prompt for the next message
+- [ ] Touch: if no CODEBASE.md, warning issued and join mode offered
 - [ ] Preflight: every ❌ includes corrected version + exact command to fix it
 - [ ] Preflight: every ⚠️ includes specific action and relevant CODEBASE.md reference
+- [ ] Preflight: PR description draft included before verdict
 - [ ] Preflight verdict lists fixes in execution order — not a list to interpret
+- [ ] Preflight: if no CODEBASE.md, minimal check only with clear warning
 - [ ] Task: relevant files, Danger Zone proximity, and reviewer identified before starting
+- [ ] Task: ends with a suggested scoped starting prompt
+- [ ] Task: if no CODEBASE.md, degraded mode with clear warning
