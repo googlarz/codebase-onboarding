@@ -36,6 +36,7 @@ Phase 6   Team Questions     1:1 format with priority tiers  [technical]
           Meeting Questions  Sprint planning / roadmap / board framing  [non-technical]
 Phase 7   Executive Brief    One-page health summary in business language  [non-technical]
 Phase 8   First Contribution Specific file + line + fix — not just a category  [technical]
+Phase 8b  Ramp-up Timeline   Week-by-week gates derived from findings — not a template  [technical]
 ────────────────────────────────────────────────────────────────────────────────────────
 Phase 9   Archaeology        return only — why decisions were made, not just what they are
 Phase 10  Contributor Signal audit only — merge rate, PR velocity, go/no-go
@@ -157,6 +158,37 @@ graph LR
 - How would you describe the overall health of the engineering foundation?
 ```
 
+### Ramp-up Timeline — technical only
+
+Generated after Phase 8. Every checkpoint references actual files, people, and question numbers found during the investigation — not generic milestones.
+
+```markdown
+## Ramp-up Timeline ⚠️ Inferred
+
+### Week 1 — get oriented and unblocked
+  □ Local dev running: `curl http://localhost:3000/health` → {"status":"ok"}
+  □ STRIPE_WEBHOOK_SECRET and JWT_SECRET added to .env (ask alice@example.com)
+  □ Can explain Client → API → Auth → Handler → DB without CODEBASE.md
+  □ Blocking team questions answered (questions 1 and 2 — see Team Questions 🔴)
+  □ First safe contribution submitted (target: test_auth.py line 47)
+
+### Week 2 — know how the team works
+  □ First PR merged without commit message feedback (conventional commits format)
+  □ PR size within team norm (under 400 lines, based on git log)
+  □ Know who to ping: auth → alice@example.com, payments/API → bob@example.com
+  □ Important questions answered (questions 3–5 — see Team Questions 🟡)
+
+### Week 4 — own the codebase
+  □ Can name all 3 Danger Zones without looking at CODEBASE.md
+  □ Touch mode no longer needed outside Danger Zones
+  □ Ready to review a teammate's PR for convention compliance
+  □ CODEBASE.md updated with anything that was wrong or missing
+```
+
+Return mode adds a **recovery gate at end of Week 1**: archaeology complete, changes since your absence absorbed, prior mental model assumptions flagged as outdated.
+
+---
+
 ### Executive Brief — non-technical only
 
 ```markdown
@@ -211,20 +243,61 @@ Watch out for:
 
 > *"Run preflight on my current changes."*
 
+Every ❌ includes the corrected version and exact command. Every ⚠️ includes the specific action and the relevant CODEBASE.md reference. The verdict is a sequence to execute, not a list to interpret.
+
 ```
 PR Pre-flight: feat/add-rate-limiting
+Branch: feat/add-rate-limiting (3 source files, 0 test files changed)
 
-✅ Commit message follows conventional commits format
-✅ No Danger Zone files in the diff
-⚠️  auth/middleware.go touched — alice@example.com should review
-❌ No test changes for modified source files (convention: every commit touches tests)
-⚠️  payments/ touched — re-stage after pre-commit hook (eslint --fix vs CI eslint)
+────────────────────────────────────────
+COMMIT MESSAGE
+────────────────────────────────────────
+❌ Doesn't follow conventional commits (used in 28 of last 30 commits)
 
-Suggested reviewers: alice@example.com, bob@example.com
+   Current:  "add rate limiting"
+   Fix to:   "feat(api): add rate limiting to middleware"
 
-Overall: ⚠️ ADDRESS BEFORE PUSHING
-  → Add tests for changed files
-  → Re-stage after pre-commit hook fires
+   Command:  git commit --amend -m "feat(api): add rate limiting to middleware"
+
+────────────────────────────────────────
+FILES CHANGED
+────────────────────────────────────────
+✅ api/routes.go — not a Danger Zone
+✅ api/middleware.go — not a Danger Zone
+
+⚠️  auth/middleware.go — DANGER ZONE
+   Why: No tests, last touched 18 months ago, security-sensitive
+   Action: alice@example.com must review (14 of last 20 commits here)
+   Watch for: session singleton on line 89 — caused a revert last month
+
+────────────────────────────────────────
+TEST COVERAGE
+────────────────────────────────────────
+❌ No test files in diff (convention: every commit that touches source touches tests)
+
+   Add tests to:
+     api/middleware.go  → tests/api/middleware_test.go
+     auth/middleware.go → tests/auth/middleware_test.go
+
+   Pattern to follow: tests/api/logging_test.go
+   (added with "feat(api): add request logging" — same structure)
+
+────────────────────────────────────────
+GOTCHAS
+────────────────────────────────────────
+⚠️  Pre-commit runs eslint --fix; CI runs eslint without fix
+   After hook fires: git add api/middleware.go && git push
+
+⚠️  auth/ tests share a singleton — don't run with -n
+   Use: pytest -p no:xdist tests/auth/
+
+────────────────────────────────────────
+VERDICT: ⚠️ ADDRESS BEFORE PUSHING
+────────────────────────────────────────
+  1. git commit --amend -m "feat(api): add rate limiting to middleware"
+  2. Add tests to tests/api/middleware_test.go and tests/auth/middleware_test.go
+     (follow tests/api/logging_test.go)
+  3. Re-stage after pre-commit hook fires, then push
 ```
 
 ---
