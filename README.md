@@ -14,17 +14,19 @@ This skill does the archaeology. Claude runs the investigation, maps the archite
 
 ---
 
-## Six modes
+## Seven modes
 
 | Mode | Use when |
 |------|----------|
 | **join** | First day on a team, inherited repo, colleague's codebase |
 | **return** | Your own code you haven't touched in 3+ months |
 | **audit** | Evaluating an OSS project before contributing |
+| **quick** | Need "what do I avoid" in 15 minutes — no time for full investigation |
 | **touch** | About to modify a specific file — get a risk assessment first |
 | **preflight** | About to push a PR — catch what reviewers will catch, before review |
 | **task** | Assigned a ticket or feature — map it to the codebase before starting |
 
+`quick` is a triage tool — Danger Zones and Gotchas only, no `CODEBASE.md` written.
 `touch`, `preflight`, and `task` are ongoing — they require an existing `CODEBASE.md`.
 
 ---
@@ -33,14 +35,16 @@ This skill does the archaeology. Claude runs the investigation, maps the archite
 
 ```
 Phase 0   Bootstrap          README, CI config, open issues, package manifests
+          └─ AI detection    Signals that the codebase is largely AI-generated — adjusts assessment lens
 Phase 1   Critical Paths     Entry points, data stores, Mermaid architecture diagram
 Phase 2   Conventions        What git history reveals vs. what the README claims
 Phase 3   Danger Zones       High-churn files, debt clusters, frequently reverted code
-Phase 4   Gotcha Detector    Undocumented env vars, pre-commit/CI gaps, test traps
+Phase 4   Gotcha Detector    Security pre-check first, then: undocumented env vars, pre-commit/CI gaps, test traps
 Phase 5   Local Dev Guide    Step-by-step to get it running — real commands, common failures  [technical]
 Phase 6   Team Questions     1:1 format with priority tiers  [technical]
           Meeting Questions  Sprint planning / roadmap / board framing  [non-technical]
-Phase 7   Executive Brief    One-page health summary in business language  [non-technical]
+          └─ Answers loop    When answers arrive: which sections to update, how to close Open Questions
+Phase 7   Executive Brief    One-page health summary — framed for your stated goal  [non-technical]
 Phase 8   First Contribution Specific file + line + fix — not just a category  [technical]
 Phase 8b  Ramp-up Timeline   Week-by-week gates derived from findings — not a template  [technical]
 ────────────────────────────────────────────────────────────────────────────────────────
@@ -220,9 +224,38 @@ and auth) need investment before safely shipping major new features.
 
 ---
 
+## Quick mode
+
+> *"Quick mode — I need to make a change in the next hour."*
+
+No CODEBASE.md written. Runs Bootstrap + Danger Zones + Gotchas only. Output is a single briefing:
+
+```
+Quick Briefing: payments-api
+
+⚠️  This is triage, not orientation. Run join mode when you have time.
+
+DON'T TOUCH FIRST
+  migrations/   — irreversible schema changes, never solo
+  auth/         — no tests, 3 reverts in 6 months, get review first
+  .env files    — shared config, changes affect everyone immediately
+
+GOTCHAS TO KNOW NOW
+  STRIPE_WEBHOOK_SECRET missing from .env.example — payments fail silently
+  Pre-commit runs eslint --fix; CI runs eslint — re-stage after hook fires
+  auth/ tests share a singleton — run pytest -p no:xdist, not pytest -n 4
+
+Suggested prompt for your change:
+  "In api/middleware.go, [your change]. Be minimal. Don't touch auth/."
+```
+
+---
+
 ## Touch mode
 
 > *"I'm about to modify `auth/middleware.go` — run touch mode."*
+
+Checks CODEBASE.md staleness first. If it's older than 4 weeks, warns before using its data.
 
 ```
 Before You Touch: auth/middleware.go
@@ -239,8 +272,19 @@ Known issues:
   Line 47   TODO  refresh token rotation not implemented
   Line 203  FIXME breaks with multiple active sessions
 
+Tests covering this:
+  tests/auth/middleware_test.go
+  tests/integration/session_test.go
+
+  Run these now, before editing, to establish a baseline.
+  A failure before you start is not your bug. A failure after is.
+
 Watch out for:
   Session singleton on line 89 — caused the revert two weeks ago
+
+Suggested prompt for your next message:
+  "In auth/middleware.go, [your change]. Be minimal.
+   Don't touch the session singleton on line 89."
 ```
 
 ---
@@ -249,7 +293,7 @@ Watch out for:
 
 > *"Run preflight on my current changes."*
 
-Every ❌ includes the corrected version and exact command. Every ⚠️ includes the specific action and the relevant CODEBASE.md reference. The verdict is a sequence to execute, not a list to interpret.
+Checks CODEBASE.md staleness first. Every ❌ includes the corrected version and exact command. Every ⚠️ includes the specific action and the relevant CODEBASE.md reference. The verdict is a sequence to execute, not a list to interpret.
 
 ```
 PR Pre-flight: feat/add-rate-limiting
@@ -275,6 +319,13 @@ FILES CHANGED
    Why: No tests, last touched 18 months ago, security-sensitive
    Action: alice@example.com must review (14 of last 20 commits here)
    Watch for: session singleton on line 89 — caused a revert last month
+
+────────────────────────────────────────
+PR SIZE
+────────────────────────────────────────
+⚠️  430 lines changed — team norm is under 400 (based on last 30 merged PRs)
+
+   Consider splitting: rate limiting logic vs. test files
 
 ────────────────────────────────────────
 TEST COVERAGE
@@ -352,6 +403,7 @@ curl -o ~/.claude/skills/codebase-onboarding/SKILL.md \
 /codebase-onboarding join       # new team or repo
 /codebase-onboarding return     # your own code after months away
 /codebase-onboarding audit      # evaluating OSS before contributing
+/codebase-onboarding quick      # 15-minute triage — danger zones + gotchas only
 /codebase-onboarding touch      # before modifying a file
 /codebase-onboarding preflight  # before pushing a PR
 /codebase-onboarding task       # when starting any new piece of work
