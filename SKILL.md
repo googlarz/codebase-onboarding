@@ -7,7 +7,7 @@ description: >
   system does, where data flows, what the implicit conventions are, and which
   files are dangerous to touch first — producing a living CODEBASE.md with
   active modes for PR pre-flight, task mapping, and mid-PR file risk assessment.
-version: 1.3.1
+version: 1.4.0
 ---
 
 # Codebase Onboarding
@@ -30,12 +30,14 @@ you provide context that only humans have.
 | Joining a new team or repo for the first time | **join** |
 | Returning to your own code after 3+ months away | **return** |
 | Evaluating an OSS project before contributing | **audit** |
+| Need "what do I avoid" in 15 minutes — no time for full investigation | **quick** |
 | About to modify a specific file mid-ramp | **touch** |
 | About to push a PR — catch issues before review | **preflight** |
 | Assigned a ticket or feature — map it to the codebase | **task** |
 
-Default to **join** if unclear. `touch`, `preflight`, and `task` are ongoing
-modes — they require an existing CODEBASE.md from a prior session.
+Default to **join** if unclear. `quick` is a triage tool — not a substitute
+for full orientation. `touch`, `preflight`, and `task` are ongoing modes —
+they require an existing CODEBASE.md from a prior session.
 
 ---
 
@@ -104,23 +106,24 @@ Wait for the answer to Question 1, then tailor the examples:
 
 ## Phase Order by Mode
 
-| Phase | join | return | audit |
-|-------|------|--------|-------|
-| 0 — Bootstrap | ✓ first | ✓ first | ✓ first |
-| 1 — Critical Paths | ✓ | ✓ | ✓ |
-| 2 — Conventions | ✓ | ✓ after Phase 9 | ✓ |
-| 3 — Danger Zones | ✓ | ✓ after Phase 9 | ✓ |
-| 4 — Gotcha Detector | ✓ | ✓ | ✓ |
-| 5 — Local Dev Guide | technical only | technical only | skip |
-| 6 — Team Questions | technical: 1:1 format | technical: 1:1 format | technical: 1:1 format |
-|                    | non-technical: meeting format | non-technical: meeting format | non-technical: meeting format |
-| 7 — Executive Brief | non-technical only | non-technical only | non-technical only |
-| 8 — First Contribution | technical only | technical only | skip |
-| 8b — Ramp-up Timeline | technical only | technical only | skip |
-| 9 — Archaeology | skip | ✓ before Phase 2 | skip |
-| 10 — Contributor Signal | skip | skip | ✓ |
+| Phase | join | return | audit | quick |
+|-------|------|--------|-------|-------|
+| 0 — Bootstrap | ✓ first | ✓ first | ✓ first | ✓ first |
+| 1 — Critical Paths | ✓ | ✓ | ✓ | skip |
+| 2 — Conventions | ✓ | ✓ after Phase 9 | ✓ | skip |
+| 3 — Danger Zones | ✓ | ✓ after Phase 9 | ✓ | ✓ |
+| 4 — Gotcha Detector | ✓ | ✓ | ✓ | ✓ |
+| 5 — Local Dev Guide | technical only | technical only | skip | skip |
+| 6 — Team Questions | technical: 1:1 format | technical: 1:1 format | technical: 1:1 format | skip |
+|                    | non-technical: meeting format | non-technical: meeting format | non-technical: meeting format | |
+| 7 — Executive Brief | non-technical only | non-technical only | non-technical only | skip |
+| 8 — First Contribution | technical only | technical only | skip | skip |
+| 8b — Ramp-up Timeline | technical only | technical only | skip | skip |
+| 9 — Archaeology | skip | ✓ before Phase 2 | skip | skip |
+| 10 — Contributor Signal | skip | skip | ✓ | skip |
 
 **In return mode:** run Phase 9 (Archaeology) immediately after Phase 1.
+**In quick mode:** no CODEBASE.md written — output is a single briefing.
 
 ---
 
@@ -174,6 +177,46 @@ Update CODEBASE.md at the end of each phase. Do not defer.
 ```
 
 CI is the most honest documentation. If it conflicts with the README, CI wins.
+
+### AI-Generated Codebase Detection
+
+Run these signals before the rest of Phase 0. AI-generated codebases have different failure modes — surface quality looks fine, but error handling is thin, edge cases aren't covered, and tests pass because they only test the happy path.
+
+```bash
+# Thin or compressed history
+git log --format="%ad" --date=short | wc -l          # total commits
+git log --format="%ae" | sort -u | wc -l             # distinct authors
+git log --format="%ad" --date=short | tail -1        # first commit date
+
+# Generic commit message signatures
+git log --format="%s" | grep -ciE \
+  "^(add|fix|update|initial commit|feat|implement|create|refactor)\b" \
+  | awk -v t=$(git log --format="%s" | wc -l) '{printf "%.0f%%\n", ($1/t)*100}'
+
+# Large initial commit followed by small tweaks
+git log --format="%H" | tail -1 | xargs git diff-tree --no-commit-id -r --stat | tail -1
+git log --format="%H %s" | head -20
+
+# Test files exist but assertions are shallow
+grep -rn "assert\|expect\|toBe\|assertEqual" \
+  --include="*.test.*" --include="*_test.*" -l | wc -l
+grep -rn "assert\|expect\|toBe\|assertEqual" \
+  --include="*.test.*" --include="*_test.*" | wc -l   # total assertions
+```
+
+**AI-generated signals (flag if 3+ present):**
+- Repo is < 3 months old with < 3 authors
+- > 60% of commit messages match generic patterns above
+- First commit is large (> 50 files); subsequent commits are small tweaks
+- Test files exist but assertion count is low relative to file count
+- Uniform file structure and naming that feels generated rather than evolved
+- No merge commits, no revert commits, no "wip" or "fix broken" messages
+
+**If flagged:** note it in CODEBASE.md and adjust assessment:
+- Don't trust test suite pass rate — check what the tests actually assert
+- Look for missing error handling and empty catch blocks explicitly
+- Check that consistent patterns within a file actually hold across files
+- Treat Phase 3 (Danger Zones) as higher priority — debt may be invisible from the surface
 
 ```bash
 ls -la && head -50 README.md
@@ -312,6 +355,52 @@ Write **Danger Zones** as a table:
 ## Phase 4: Gotcha Detector
 
 **(all modes)**
+
+### Security Pre-Check — Run First
+
+Before hunting for gotchas, scan for committed credentials. This is not a
+gotcha — it's an incident.
+
+```bash
+# Live credentials in current code
+git grep -nE \
+  "sk_live_|pk_live_|AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{36}|\
+AIza[0-9A-Za-z\-_]{35}|ya29\.[0-9A-Za-z\-_]+|\
+-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY" \
+  -- ':!*.md' ':!*.example' ':!*.sample' 2>/dev/null | head -20
+
+# Also check git history — deleted credentials are still compromised
+git log --all -p --follow -S "sk_live_\|AKIA\|ghp_\|-----BEGIN" \
+  -- ':!*.md' 2>/dev/null | grep "^+" | grep -iE \
+  "sk_live_|AKIA[0-9A-Z]|ghp_[a-zA-Z]|BEGIN.*PRIVATE" | head -10
+```
+
+**If live credentials found in current code: STOP.**
+
+Do not continue the investigation. Tell the human:
+
+```
+⛔ SECURITY INCIDENT — stop the investigation
+
+Found: [pattern] at [file:line]
+
+This key may be compromised. Take these steps before anything else:
+
+1. Rotate the key immediately — treat it as exposed regardless of repo visibility
+2. Check if the repo is or was ever public (gh repo view --json isPrivate)
+3. Alert your team / security contact
+4. Remove the credential from the file and from git history:
+   git filter-repo --path [file] --invert-paths   (or BFG Repo Cleaner)
+5. Force-push the cleaned history and invalidate all existing clones
+
+Come back and continue this investigation after the incident is resolved.
+```
+
+If credentials found only in git history (not current code): note in Gotchas
+with severity HIGH and the specific commit hash. Don't STOP — but flag that
+rotation may still be needed depending on repo visibility history.
+
+---
 
 Hunts for what silently burns every new contributor — not in the README, not
 in the git log, not mentioned by anyone.
@@ -484,6 +573,20 @@ was last touched 18 months ago — is that intentional or a known gap?"
 
 Aim for 2–4 blocking, 3–5 important, 2–4 nice-to-know. Under 5 total means
 you weren't paying attention. Over 12 means you're not filtering.
+
+### Closing the Loop — When You Get Answers
+
+After you've had the 1:1 or meeting, return to CODEBASE.md and:
+
+1. **Update the relevant section** — if the answer changes what you wrote in
+   Danger Zones, Gotchas, or Conventions, update it and upgrade the tag
+   (❓ Gap → ✅ Verified or ⚠️ Inferred)
+2. **Close answered questions** — remove from Open Questions, note the answer
+   in the relevant section's prose or in Contribution Log
+3. **Flag unresolved** — if the answer was "we don't know either," keep it in
+   Open Questions with a note that it's a known unknown, not a gap
+
+This is what separates a one-time orientation from a living document.
 
 ### For non-technical users — meeting format
 
@@ -763,6 +866,65 @@ for p in prs:
 
 Add to CODEBASE.md: merge rate, average PR-to-merge time, maintainer
 responsiveness, and go/no-go recommendation with reasoning.
+
+---
+
+## Quick Mode: 15-Minute Triage
+
+**Use when you need "what do I avoid" before making a quick change — not a
+substitute for join/return. No CODEBASE.md written.**
+
+> "Quick mode — I need to make a change in the next hour."
+
+Runs Phase 0 (Bootstrap) + Phase 3 (Danger Zones) + Phase 4 (Gotcha Detector,
+including the security pre-check). Skips everything else.
+
+Output is a single briefing — no CODEBASE.md, no architecture map, no team
+questions:
+
+```
+Quick Briefing: [repo name]
+
+⚠️  This is triage, not orientation. Run join mode when you have time.
+
+────────────────────────────────────────
+WHAT IT IS
+────────────────────────────────────────
+[One sentence from Phase 0 Bootstrap]
+
+────────────────────────────────────────
+DON'T TOUCH FIRST
+────────────────────────────────────────
+[Danger Zones table from Phase 3 — abridged]
+
+| File / Area    | Why dangerous               | Safe approach        |
+|----------------|-----------------------------|----------------------|
+| auth/           | No tests, 3 reverts         | Get review first     |
+| migrations/     | Irreversible schema changes | Never solo           |
+
+────────────────────────────────────────
+GOTCHAS TO KNOW NOW
+────────────────────────────────────────
+[Top 3–5 gotchas from Phase 4]
+
+- STRIPE_WEBHOOK_SECRET missing from .env.example — payments fail silently
+- Pre-commit runs eslint --fix; CI runs eslint — re-stage after hook fires
+- auth/ tests share a singleton — run pytest -p no:xdist, not pytest -n 4
+
+────────────────────────────────────────
+FOR YOUR CHANGE
+────────────────────────────────────────
+[If user described their specific task: flag proximity to danger zones,
+ identify the one most relevant gotcha, suggest a scoped prompt]
+
+Suggested prompt:
+  "In [file], [change]. Be minimal. Don't touch [danger zone]."
+```
+
+**Quick mode is explicitly time-bounded.** If Phase 0 reveals the codebase is
+much larger or more complex than expected, pause and recommend running full
+join mode instead — a 15-minute triage of a 500k-line monolith is worse than
+no triage.
 
 ---
 
@@ -1137,6 +1299,9 @@ new contributor joined, conventions visibly violated in recent PRs.
 ## Verification
 
 **Core (all modes):**
+- [ ] Phase 4 security pre-check ran before any gotcha hunting
+- [ ] If live credentials found: investigation stopped and incident protocol delivered
+- [ ] If AI-generated signals detected: flagged in CODEBASE.md, assessment adjusted
 - [ ] Can describe what the system does in one paragraph without looking at README
 - [ ] Can trace a request from entry point to exit
 - [ ] Architecture Map contains a Mermaid diagram (plain labels for non-technical)
@@ -1146,10 +1311,17 @@ new contributor joined, conventions visibly violated in recent PRs.
 - [ ] Danger Zones listed with reasons and "when to touch" guidance
 - [ ] Open Questions section exists and is non-empty
 
+**quick mode:**
+- [ ] Output is a single briefing — no CODEBASE.md written
+- [ ] Danger Zones and top gotchas present
+- [ ] If task described: scoped prompt included
+- [ ] If codebase too large for 15-minute triage: join mode recommended instead
+
 **Technical users:**
 - [ ] Local Dev Guide is an ordered list of real commands — no vague steps
 - [ ] Local Dev Guide includes "verify it works" check and common failures
 - [ ] Team Questions: 3 tiers, 5–12 questions total, all specific
+- [ ] Answers loop documented — human knows which sections to update when answers arrive
 - [ ] Phase 8 produced file + line + fix — not a category
 - [ ] Ramp-up Timeline checkboxes reference actual file names and question numbers — not generic milestones
 - [ ] Return mode Ramp-up includes recovery gate at end of Week 1
