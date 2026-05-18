@@ -554,6 +554,12 @@ curl -o ~/.claude/skills/codebase-onboarding/SKILL.md \
 
 ---
 
+## Used at your company?
+
+Using codebase-onboarding on your team? [Open an issue](https://github.com/googlarz/codebase-onboarding/issues/new?title=We+use+codebase-onboarding+at+[Company]) — I'd love to add your logo here.
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
