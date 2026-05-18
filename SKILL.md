@@ -7,7 +7,7 @@ description: >
   system does, where data flows, what the implicit conventions are, and which
   files are dangerous to touch first — producing a living CODEBASE.md with
   active modes for PR pre-flight, task mapping, and mid-PR file risk assessment.
-version: 1.4.1
+version: 1.5.0
 ---
 
 # Codebase Onboarding
@@ -31,6 +31,7 @@ you provide context that only humans have.
 | Returning to your own code after 3+ months away | **return** |
 | Evaluating an OSS project before contributing | **audit** |
 | Need "what do I avoid" in 15 minutes — no time for full investigation | **quick** |
+| Leaving this codebase — write the handoff document you wish existed | **sunset** |
 | About to modify a specific file mid-ramp | **touch** |
 | About to push a PR — catch issues before review | **preflight** |
 | Assigned a ticket or feature — map it to the codebase | **task** |
@@ -106,24 +107,26 @@ Wait for the answer to Question 1, then tailor the examples:
 
 ## Phase Order by Mode
 
-| Phase | join | return | audit | quick |
-|-------|------|--------|-------|-------|
-| 0 — Bootstrap | ✓ first | ✓ first | ✓ first | ✓ first |
-| 1 — Critical Paths | ✓ | ✓ | ✓ | skip |
-| 2 — Conventions | ✓ | ✓ after Phase 9 | ✓ | skip |
-| 3 — Danger Zones | ✓ | ✓ after Phase 9 | ✓ | ✓ |
-| 4 — Gotcha Detector | ✓ | ✓ | ✓ | ✓ |
-| 5 — Local Dev Guide | technical only | technical only | skip | skip |
-| 6 — Team Questions | technical: 1:1 format | technical: 1:1 format | technical: 1:1 format | skip |
-|                    | non-technical: meeting format | non-technical: meeting format | non-technical: meeting format | |
-| 7 — Executive Brief | non-technical only | non-technical only | non-technical only | skip |
-| 8 — First Contribution | technical only | technical only | skip | skip |
-| 8b — Ramp-up Timeline | technical only | technical only | skip | skip |
-| 9 — Archaeology | skip | ✓ before Phase 2 | skip | skip |
-| 10 — Contributor Signal | skip | skip | ✓ | skip |
+| Phase | join | return | audit | quick | sunset |
+|-------|------|--------|-------|-------|--------|
+| 0 — Bootstrap | ✓ first | ✓ first | ✓ first | ✓ first | ✓ first |
+| 1 — Critical Paths | ✓ | ✓ | ✓ | skip | skip |
+| 2 — Conventions | ✓ | ✓ after Phase 9 | ✓ | skip | skip |
+| 3 — Danger Zones | ✓ | ✓ after Phase 9 | ✓ | ✓ | ✓ |
+| 4 — Gotcha Detector | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 5 — Local Dev Guide | technical only | technical only | skip | skip | skip |
+| 6 — Team Questions | technical: 1:1 format | technical: 1:1 format | technical: 1:1 format | skip | skip |
+|                    | non-technical: meeting format | non-technical: meeting format | non-technical: meeting format | | |
+| 7 — Executive Brief | non-technical only | non-technical only | non-technical only | skip | skip |
+| 8 — First Contribution | technical only | technical only | skip | skip | skip |
+| 8b — Ramp-up Timeline | technical only | technical only | skip | skip | skip |
+| 9 — Archaeology | skip | ✓ before Phase 2 | skip | skip | skip |
+| 10 — Contributor Signal | skip | skip | ✓ | skip | skip |
+| 11 — Sunset | skip | skip | skip | skip | ✓ |
 
 **In return mode:** run Phase 9 (Archaeology) immediately after Phase 1.
 **In quick mode:** no CODEBASE.md written — output is a single briefing.
+**In sunset mode:** produces a Handoff Document, not a CODEBASE.md update.
 
 ---
 
@@ -869,6 +872,80 @@ responsiveness, and go/no-go recommendation with reasoning.
 
 ---
 
+## Phase 11: Sunset
+
+**(sunset mode only)**
+
+The handoff document a departing engineer never writes. Runs after Phase 0,
+Phase 3 (Danger Zones), and Phase 4 (Gotchas) to ground the output in what
+the code actually says — then asks the questions only you can answer.
+
+```bash
+# What have you personally touched most?
+git log --author="$(git config user.email)" --format=format: --name-only \
+  | grep -v "^$" | sort | uniq -c | sort -rn | head -20
+
+# What's undocumented that you know about?
+# (review CODEBASE.md Danger Zones and Gotchas — what's missing?)
+
+# What decisions did you make that aren't in the code?
+git log --author="$(git config user.email)" --format="%s %b" | head -30
+```
+
+Claude asks five questions — answers go directly into the Handoff Document:
+
+1. **What would you warn your replacement about on day one?**
+   *(not in the README, not in CODEBASE.md — the thing you'd say over coffee)*
+
+2. **What decisions did you make that the code doesn't explain?**
+   *(architectural choices, tradeoffs, "we tried X and it broke because Y")*
+
+3. **What areas should your replacement avoid touching alone?**
+   *(beyond what's in Danger Zones — your personal experience)*
+
+4. **Who should they build a relationship with first, and why?**
+   *(the person who knows where the bodies are buried)*
+
+5. **What's the one thing you wish you'd done differently?**
+   *(technical debt you created, decisions you'd reverse, shortcuts that compounded)*
+
+**Output — Handoff Document:**
+
+```markdown
+# Handoff: [your name] → [date]
+
+## What this system does
+[From Phase 0 — one paragraph]
+
+## Danger Zones (verified)
+[From Phase 3 — abridged]
+
+## Gotchas (verified)
+[From Phase 4 — top items]
+
+## What the code doesn't tell you
+
+### Decisions and their reasons
+- [Decision]: [why it was made, what was rejected, what you'd do differently now]
+
+### What to avoid (personal experience)
+- [Area]: [what happened when you touched it, what to watch out for]
+
+### Who to know
+- [Person]: [what they know, why they matter, how to work with them]
+
+## What I'd do differently
+[Honest reflection — the debt you created, the shortcuts that compounded]
+
+## For your first week
+[3–5 specific suggestions based on what you know they'll need]
+```
+
+Write this to `HANDOFF-[your-name]-[date].md` alongside CODEBASE.md.
+Commit it. It's for the next person, not for you.
+
+---
+
 ## Quick Mode: 15-Minute Triage
 
 **Use when you need "what do I avoid" before making a quick change — not a
@@ -986,6 +1063,15 @@ Suggested prompt for your next message:
    Be minimal — only change what's needed for [your goal].
    Don't touch the session singleton on line 89."
 ```
+
+**After touch mode — update CODEBASE.md if anything new surfaced:**
+
+- Recent revert not listed in Danger Zones? Add it.
+- TODO/FIXME on a line that wasn't captured in Gotchas? Add it.
+- Owner has changed since CODEBASE.md was written? Update authorship.
+- Covered test was missing or broken? Note it.
+
+The document gets richer with every session, not just at onboarding time.
 
 ---
 
@@ -1158,6 +1244,13 @@ Every fix in the verdict must be a concrete action — a command to run, a file
 to edit, a person to add. Never "consider adding tests." Always "add a test to
 `tests/api/middleware_test.go` following the pattern in `logging_test.go`."
 
+**After preflight — update CODEBASE.md if anything new surfaced:**
+
+- Convention violation caught that wasn't in the Conventions section? Add it.
+- Gotcha triggered that wasn't documented? Add it.
+- Danger Zone file touched that wasn't flagged? Verify and update the table.
+- New reviewer identified from git log who isn't in CODEBASE.md? Add them.
+
 ---
 
 ## Task Mode: Map a Ticket to the Codebase
@@ -1183,6 +1276,11 @@ Task mode maps intent to the codebase using CODEBASE.md as the lens:
 3. **Surface applicable conventions** — what does the team's pattern say about how to do this?
 4. **Find similar past work** — has this been done before? Who did it?
 5. **Identify who to loop in** — from authorship and expertise signals
+6. **Complexity signal** — STRAIGHTFORWARD / MODERATE / COMPLEX / UNKNOWN based on:
+   - Danger Zone involvement (yes/no)
+   - Prior pattern exists (yes/no/partial)
+   - Number of owners who need coordination
+   - Similar past PRs: how long they took to merge
 
 ```bash
 # Has this kind of work been done before?
@@ -1221,6 +1319,15 @@ Who to loop in:
 Risk level: LOW
   api/ is not a Danger Zone. Pattern is established. Bob can review.
 
+Complexity signal: STRAIGHTFORWARD
+  Similar past work: 1 prior example, same files, merged in 3 days.
+  Likely scope: 1–2 files, established pattern to follow.
+  No Danger Zone involvement. No coordination needed.
+
+  [Scale: STRAIGHTFORWARD → MODERATE → COMPLEX → UNKNOWN]
+  COMPLEX = Danger Zone + no prior pattern + multiple owners
+  UNKNOWN = task description too vague to map to files
+
 Suggested first step:
   Read api/middleware.go (the logging middleware) — it's the template
   for what you're about to build.
@@ -1230,6 +1337,13 @@ Suggested starting prompt:
    middleware, add a rate limiting middleware. Don't touch
    auth/middleware.go. Add a test in tests/api/middleware_test.go."
 ```
+
+**After task mode — update CODEBASE.md if anything new surfaced:**
+
+- File identified as relevant that wasn't in Critical Paths? Add it.
+- Complexity signal was UNKNOWN (task too vague to map)? Flag that as a team question.
+- Similar past work revealed a pattern not in Conventions? Document it.
+- New file owner found via git log? Update authorship signals.
 
 ---
 
@@ -1311,6 +1425,13 @@ new contributor joined, conventions visibly violated in recent PRs.
 - [ ] Danger Zones listed with reasons and "when to touch" guidance
 - [ ] Open Questions section exists and is non-empty
 
+**sunset mode:**
+- [ ] Five questions asked and answered
+- [ ] Handoff Document written to HANDOFF-[name]-[date].md
+- [ ] Danger Zones and Gotchas sections grounded in Phase 3 + 4 output
+- [ ] "What the code doesn't tell you" section present — not generic
+- [ ] Committed to the repo
+
 **quick mode:**
 - [ ] Output is a single briefing — no CODEBASE.md written
 - [ ] Danger Zones and top gotchas present
@@ -1356,5 +1477,9 @@ new contributor joined, conventions visibly violated in recent PRs.
 - [ ] Preflight: if no CODEBASE.md, minimal check only with clear warning
 - [ ] Task: CODEBASE.md staleness checked before running
 - [ ] Task: relevant files, Danger Zone proximity, and reviewer identified before starting
+- [ ] Task: complexity signal present (STRAIGHTFORWARD / MODERATE / COMPLEX / UNKNOWN)
 - [ ] Task: ends with a suggested scoped starting prompt
 - [ ] Task: if no CODEBASE.md, degraded mode with clear warning
+- [ ] Task: CODEBASE.md updated if new findings surfaced
+- [ ] Touch: CODEBASE.md updated if new findings surfaced
+- [ ] Preflight: CODEBASE.md updated if new findings surfaced
