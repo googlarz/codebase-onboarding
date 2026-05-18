@@ -74,6 +74,149 @@ The same investigation runs either way. The output is completely different.
 
 ## What you get
 
+<details>
+<summary><strong>See a complete example CODEBASE.md</strong></summary>
+
+```markdown
+# CODEBASE.md — payments-api
+Generated: 2024-03-15 | Mode: join | Investigator: Claude
+Last verified: 2024-03-15 | Staleness threshold: 4 weeks
+
+---
+
+## Project at a Glance ✅ Verified
+
+**What it does:** Stripe payment processing API for the SaaS billing layer.
+Handles subscriptions, webhooks, and invoice generation.
+
+**Stack:** Go 1.21, PostgreSQL 15, Redis 7, deployed on Railway.
+**Test runner:** `pytest -x` (CI), `make test` (README — inconsistent, see Q2)
+**Commit convention:** Conventional commits (28 of last 30 PRs)
+
+**AI-generated signal:** None detected. 1 author email, organic commit messages.
+
+---
+
+## Architecture ✅ Verified
+
+```mermaid
+graph LR
+    Client -->|HTTP| API[api/routes.go]
+    API --> Auth[auth/middleware.go]
+    Auth --> Stripe[stripe/client.go]
+    Auth --> Handler[handlers/]
+    Handler --> DB[(postgres)]
+    Handler --> Cache[(redis)]
+    Stripe -->|webhooks| Webhook[handlers/webhook.go]
+```
+
+Entry points: `cmd/server/main.go` (API), `cmd/worker/main.go` (background jobs)
+Data stores: PostgreSQL (primary), Redis (session cache + job queue)
+
+---
+
+## Danger Zones ✅ Verified
+
+| File / Area              | Why dangerous                            | When to touch     |
+|--------------------------|------------------------------------------|-------------------|
+| `src/core/engine.go`     | 2,847 lines, 47 TODOs, in 89% of PRs    | After 4+ weeks    |
+| `migrations/`            | Irreversible schema changes              | Never solo        |
+| `auth/middleware.go`     | No tests, last touched 18 months ago     | With alice@ review|
+| `payments/sync.go`       | Reverted 3× in 6 months                 | Ask bob@ first    |
+
+---
+
+## Gotchas ✅ Verified
+
+- `STRIPE_WEBHOOK_SECRET` required but absent from `.env.example` —
+  payments fail silently without it
+- Pre-commit runs `eslint --fix`; CI runs `eslint` — passes locally,
+  fails CI if you don't re-stage after the hook fires
+- `auth/` tests share a singleton — `pytest -n 4` causes random failures;
+  always run `pytest -p no:xdist auth/`
+- `scripts/seed.sh` required for tests — not in README
+
+---
+
+## Conventions ⚠️ Inferred
+
+- **Commits:** Conventional commits enforced by pre-commit hook
+- **PR size:** Median 280 lines (last 30 PRs); over 400 gets flagged in review
+- **Ownership:** auth/ → alice@example.com, payments/ + API → bob@example.com
+- **Tests:** Every source commit touches a test file (22 of last 25 PRs)
+- **Branches:** `feat/`, `fix/`, `chore/` prefixes, squash-merged
+
+---
+
+## Local Dev Guide ✅ Verified
+
+1. `cp .env.example .env`
+2. Set missing variables:
+   - `STRIPE_WEBHOOK_SECRET` — ask alice@example.com for the dev key
+   - `JWT_SECRET` — any 32-char string works locally
+3. `npm install`
+4. `docker-compose up -d postgres redis`
+5. `npm run db:migrate`
+6. `node scripts/seed.sh`   ← not in README; required for tests
+7. `npm run dev`            → http://localhost:3000
+
+Verify: `curl http://localhost:3000/health` → `{"status":"ok"}`
+
+---
+
+## Team Questions
+
+### 🔴 Blocking (ask in the first hour)
+1. `STRIPE_WEBHOOK_SECRET` is in code but not `.env.example`. Shared dev key?
+2. CI runs `pytest -x`, README says `make test`. Which for local dev?
+
+### 🟡 Important (this week)
+3. `payments/sync.go` reverted 3× in 6 months — active fix, or avoided?
+4. `auth/middleware.go` has no tests — intentional or technical debt?
+
+### 🟢 Nice-to-know
+5. `core/engine.go` is 2,847 lines — plan to split it, or intentional?
+
+---
+
+## Open Questions ❓ Gap
+
+- No staging environment documented. Does one exist? How to access?
+- `scripts/seed.sh` undocumented — what does it seed, and is it safe to re-run?
+
+---
+
+## First Safe Contribution ✅ Verified
+
+**Target:** `tests/auth/test_middleware.py`, line 47 — missing edge case for
+expired tokens. Bob added a TODO comment 3 weeks ago. Low risk, high value.
+
+Pattern to follow: `tests/api/test_logging.py` (same structure, merged cleanly).
+
+---
+
+## Ramp-up Timeline ⚠️ Inferred
+
+### Week 1 — get oriented and unblocked
+  □ Local dev running: `curl http://localhost:3000/health` → {"status":"ok"}
+  □ Blocking questions answered (Q1 + Q2 above)
+  □ Can explain Client → API → Auth → Handler → DB without this file
+
+### Week 2 — know how the team works
+  □ First PR merged without commit message feedback
+  □ PR size within team norm (under 400 lines)
+  □ Know who to ping for auth and payments changes
+
+### Week 4 — own the codebase
+  □ Can name all 4 Danger Zones without reading this file
+  □ Touch mode no longer needed outside Danger Zones
+  □ CODEBASE.md updated with anything that was wrong or missing
+```
+
+</details>
+
+---
+
 ### `CODEBASE.md` — honest by design
 
 Every section carries a confidence tag:
